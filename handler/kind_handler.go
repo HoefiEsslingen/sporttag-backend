@@ -21,6 +21,7 @@ type KindHandler struct {
 func (h *KindHandler) RegisterKind(w http.ResponseWriter, r *http.Request) {
 	// Wenn kein Duplikat: Kind wie bisher hinzufügen…
 	if time.Now().After(h.Deadline) {
+		// Uhrzeit in UTc liegt zwei Stunden vor unserer Zeit
 		http.Error(w, "Anmeldung geschlossen.", http.StatusForbidden)
 		return
 	}
