@@ -19,8 +19,15 @@ type KindHandler struct {
 }
 
 func (h *KindHandler) RegisterKind(w http.ResponseWriter, r *http.Request) {
+	// Wenn kein Duplikat: Kind wie bisher hinzufügen…
+	if time.Now().After(h.Deadline) {
+		http.Error(w, "Anmeldung geschlossen.", http.StatusForbidden)
+		return
+	}
+
 	// 1. Kind aus Request auslesen
 	var k strukturen.Kind
+
 	if err := json.NewDecoder(r.Body).Decode(&k); err != nil {
 		http.Error(w, "Ungültige Daten.", http.StatusBadRequest)
 		return
@@ -45,12 +52,6 @@ func (h *KindHandler) RegisterKind(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(resp.Body).Decode(&checkResult)
 	if len(checkResult.Results) > 0 {
 		http.Error(w, "Kind existiert bereits", http.StatusConflict)
-		return
-	}
-
-	// Wenn kein Duplikat: Kind wie bisher hinzufügen…
-	if time.Now().After(h.Deadline) {
-		http.Error(w, "Anmeldung geschlossen.", http.StatusForbidden)
 		return
 	}
 	payload := map[string]interface{}{
