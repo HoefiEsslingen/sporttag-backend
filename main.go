@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"sporttag/handler"
@@ -40,6 +41,12 @@ func main() {
 		ParseServerURL: config.ParseServerURL,
 	}
 	http.HandleFunc("/registerKind", kindHandler.RegisterKind)
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // für lokalen Test
+	}
+
 	log.Println("Server läuft auf :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
