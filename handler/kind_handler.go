@@ -60,6 +60,16 @@ func (h *KindHandler) RegisterKind(w http.ResponseWriter, r *http.Request) {
 		"geschlecht": k.Geschlecht,
 		"bezahlt":    false,
 	}
+
+	// …und an Parse senden
+	w.Header().Set("Access-Control-Allow-Origin", "https://sporttag.b4a.app") // besser: domain deiner Webapp
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	body, _ := json.Marshal(payload)
 	req, err = http.NewRequest("POST", h.ParseServerURL+"/classes/Kind", bytes.NewBuffer(body))
 	if err != nil {
