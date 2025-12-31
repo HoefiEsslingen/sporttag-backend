@@ -262,3 +262,114 @@ func (h *KindHandler) GetKindByCriteria(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result.Results[0])
 }
+
+func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "Methode nicht erlaubt", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var reqBody struct {
+		Search struct {
+			VorName    string `json:"vorName"`
+			NachName   string `json:"nachName"`
+			Jahrgang   int    `json:"jahrgang"`
+			Geschlecht string `json:"geschlecht"`
+		} `json:"search"`
+		Update map[string]interface{} `json:"update"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		http.Error(w, "Ungültige JSON-Daten", http.StatusBadRequest)
+		return
+	}
+
+	s := reqBody.Search
+	if s.VorName == "" || s.NachName == "" || s.Geschlecht == "" || s.Jahrgang == 0 {
+		http.Error(w, "Unvollständige Suchdaten", http.StatusBadRequest)
+		return
+	}
+
+	if len(reqBody.Update) == 0 {
+		http.Error(w, "Keine Update-Daten angegeben", http.StatusBadRequest)
+		return
+	}
+
+	// 1️⃣ Kind suchen
+	where := map[string]interface{}{
+		"vorName":    s.VorName,
+		"nachName":   s.NachName,
+		"jahrgang":   s.Jahrgang,
+		"geschlecht": s.Geschlecht,
+	}
+
+	whereJSON, _ := json.Marshal(where)
+
+	findReq, _ := http.NewRequest(
+		"GET",
+		h.ParseServerURL+"/classes/Kind?where="+url.QueryEscape(string(whereJSON)),
+		nil,
+	)
+
+	findReq.Header.Set("X-Parse-Application-Id", h.ParseAppID)
+	findReq.Header.Set("X-Parse-Javascript-Key", h.ParseJSKey)
+
+	findResp, err := http.DefaultClient.Do(findReq)
+	if err != nil {
+		http.Error(w, "Fehler bei Parse (Search)", http.StatusInternalServerError)
+		return
+	}
+	defer findResp.Body.Close()
+
+	var result struct {
+		Results []map[string]interface{} `json:"results"`
+	}
+
+	if err := json.NewDecoder(findResp.Body).Decode(&result); err != nil {
+		http.Error(w, "Ungültige Parse-Antwort", http.StatusInternalServerError)
+		return
+	}
+
+	if len(result.Results) == 0 {
+		http.Error(w, "Kind nicht gefunden", http.StatusNotFound)
+		return
+	}
+
+	if len(result.Results) > 1 {
+		http.Error(w, "Mehrdeutige Suchkriterien", http.StatusConflict)
+		return
+	}
+
+	objectId := result.Results[0]["objectId"].(string)
+
+	// 2️⃣ Update durchführen
+	updateBody, _ := json.Marshal(reqBody.Update)
+
+	updateReq, _ := http.NewRequest(
+		"PUT",
+		h.ParseServerURL+"/classes/Kind/"+objectId,
+		bytes.NewBuffer(updateBody),
+	)
+
+	updateReq.Header.Set("X-Parse-Application-Id", h.ParseAppID)
+	updateReq.Header.Set("X-Parse-Javascript-Key", h.ParseJSKey)
+	updateReq.Header.Set("Content-Type", "application/json")
+
+	updateResp, err := http.DefaultClient.Do(updateReq)
+	if err != nil {
+		http.Error(w, "Fehler bei Parse (Update)", http.StatusInternalServerError)
+		return
+	}
+	defer updateResp.Body.Close()
+
+	if updateResp.StatusCode != 200 {
+		http.Error(w, "Update fehlgeschlagen", updateResp.StatusCode)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"message":  "Kind aktualisiert",
+		"objectId": objectId,
+	})
+}
