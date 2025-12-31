@@ -43,6 +43,7 @@ func main() {
 	http.HandleFunc("/registerKind", kindHandler.RegisterKind)
 	http.HandleFunc("/kinder", kindHandler.GetKinder)
 	http.HandleFunc("/kinder/", kindHandler.UpdateKind)
+	http.HandleFunc("/kind", kindHandler.GetKindByCriteria)
 
 	port := os.Getenv("PORT")
 	if port == "" {

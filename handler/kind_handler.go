@@ -192,3 +192,67 @@ func (h *KindHandler) UpdateKind(w http.ResponseWriter, r *http.Request) {
 		"message": "Kind aktualisiert",
 	})
 }
+func (h *KindHandler) GetKindByCriteria(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+
+	vorName := q.Get("vorName")
+	nachName := q.Get("nachName")
+	jahrgang := q.Get("jahrgang")
+	geschlecht := q.Get("geschlecht")
+
+	if vorName == "" || nachName == "" || jahrgang == "" || geschlecht == "" {
+		http.Error(w, "Fehlende Suchparameter", http.StatusBadRequest)
+		return
+	}
+
+	where := map[string]interface{}{
+		"vorName":    vorName,
+		"nachName":   nachName,
+		"jahrgang":   jahrgang,
+		"geschlecht": geschlecht,
+	}
+
+	whereJSON, _ := json.Marshal(where)
+
+	req, err := http.NewRequest(
+		"GET",
+		h.ParseServerURL+"/classes/Kind?where="+url.QueryEscape(string(whereJSON)),
+		nil,
+	)
+	if err != nil {
+		http.Error(w, "Fehler beim Request", http.StatusInternalServerError)
+		return
+	}
+
+	req.Header.Set("X-Parse-Application-Id", h.ParseAppID)
+	req.Header.Set("X-Parse-Javascript-Key", h.ParseJSKey)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		http.Error(w, "Fehler bei Parse", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	var result struct {
+		Results []map[string]interface{} `json:"results"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		http.Error(w, "Ungültige Parse-Antwort", http.StatusInternalServerError)
+		return
+	}
+
+	if len(result.Results) == 0 {
+		http.Error(w, "Kind nicht gefunden", http.StatusNotFound)
+		return
+	}
+
+	if len(result.Results) > 1 {
+		http.Error(w, "Mehrdeutige Anfrage", http.StatusConflict)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result.Results[0])
+}
