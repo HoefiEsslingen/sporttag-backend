@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"sporttag/strukturen"
@@ -138,4 +139,56 @@ func (h *KindHandler) GetKinder(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`"results":`))
 	io.Copy(w, resp.Body)
 	w.Write([]byte(`}`))
+}
+
+func (h *KindHandler) UpdateKind(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "Methode nicht erlaubt", http.StatusMethodNotAllowed)
+		return
+	}
+
+	objectId := strings.TrimPrefix(r.URL.Path, "/kinder/")
+	if objectId == "" {
+		http.Error(w, "objectId fehlt", http.StatusBadRequest)
+		return
+	}
+
+	var payload map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "Ungültige Daten", http.StatusBadRequest)
+		return
+	}
+
+	body, _ := json.Marshal(payload)
+
+	req, err := http.NewRequest(
+		"PUT",
+		h.ParseServerURL+"/classes/Kind/"+objectId,
+		bytes.NewBuffer(body),
+	)
+	if err != nil {
+		http.Error(w, "Fehler beim Request", http.StatusInternalServerError)
+		return
+	}
+
+	req.Header.Set("X-Parse-Application-Id", h.ParseAppID)
+	req.Header.Set("X-Parse-Javascript-Key", h.ParseJSKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		http.Error(w, "Fehler bei Parse", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		http.Error(w, "Update fehlgeschlagen", resp.StatusCode)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Kind aktualisiert",
+	})
 }
