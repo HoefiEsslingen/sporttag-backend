@@ -197,11 +197,17 @@ func (h *KindHandler) GetKindByCriteria(w http.ResponseWriter, r *http.Request) 
 
 	vorName := q.Get("vorName")
 	nachName := q.Get("nachName")
-	jahrgang := q.Get("jahrgang")
+	jahrgangStr := q.Get("jahrgang")
 	geschlecht := q.Get("geschlecht")
 
-	if vorName == "" || nachName == "" || jahrgang == "" || geschlecht == "" {
+	if vorName == "" || nachName == "" || jahrgangStr == "" || geschlecht == "" {
 		http.Error(w, "Fehlende Suchparameter", http.StatusBadRequest)
+		return
+	}
+
+	jahrgang, err := strconv.Atoi(jahrgangStr)
+	if err != nil {
+		http.Error(w, "jahrgang muss numerisch sein", http.StatusBadRequest)
 		return
 	}
 
