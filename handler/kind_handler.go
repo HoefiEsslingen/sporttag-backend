@@ -320,112 +320,144 @@ func (h *KindHandler) GetKindByCriteria(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPut {
-		http.Error(w, "Methode nicht erlaubt", http.StatusMethodNotAllowed)
+	// CORS
+	w.Header().Set("Access-Control-Allow-Origin", "https://sporttag.b4a.app")
+	w.Header().Set("Access-Control-Allow-Methods", "PATCH, PUT, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	var reqBody struct {
-		Search struct {
-			VorName    string `json:"vorName"`
-			NachName   string `json:"nachName"`
-			Jahrgang   int    `json:"jahrgang"`
-			Geschlecht string `json:"geschlecht"`
-		} `json:"search"`
-		Update map[string]interface{} `json:"update"`
+	// 1️⃣ Nur PATCH oder PUT erlaubt
+	if r.Method != http.MethodPatch && r.Method != http.MethodPut {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+	// 2️⃣ Request lesen
+	var reqData strukturen.Kind
+	if err := json.NewDecoder(r.Body).Decode(&reqData); err != nil {
 		http.Error(w, "Ungültige JSON-Daten", http.StatusBadRequest)
 		return
 	}
 
-	s := reqBody.Search
-	if s.VorName == "" || s.NachName == "" || s.Geschlecht == "" || s.Jahrgang == 0 {
-		http.Error(w, "Unvollständige Suchdaten", http.StatusBadRequest)
+	// Pflichtfelder für Suche
+	if reqData.VorName == "" || reqData.NachName == "" ||
+		reqData.Geschlecht == "" || reqData.Jahrgang == 0 {
+		http.Error(w, "Pflichtfelder fehlen", http.StatusBadRequest)
 		return
 	}
 
-	if len(reqBody.Update) == 0 {
-		http.Error(w, "Keine Update-Daten angegeben", http.StatusBadRequest)
-		return
-	}
+	// 3️⃣ Kind eindeutig suchen
+	query := `{"vorName":"` + reqData.VorName +
+		`","nachName":"` + reqData.NachName +
+		`","jahrgang":` + strconv.Itoa(reqData.Jahrgang) +
+		`,"geschlecht":"` + reqData.Geschlecht + `"}`
 
-	// 1️⃣ Kind suchen
-	where := map[string]interface{}{
-		"vorName":    s.VorName,
-		"nachName":   s.NachName,
-		"jahrgang":   s.Jahrgang,
-		"geschlecht": s.Geschlecht,
-	}
+	queryURL := h.ParseServerURL + "/classes/Kind?where=" + url.QueryEscape(query)
 
-	whereJSON, _ := json.Marshal(where)
-
-	findReq, _ := http.NewRequest(
-		"GET",
-		h.ParseServerURL+"/classes/Kind?where="+url.QueryEscape(string(whereJSON)),
-		nil,
-	)
-
-	findReq.Header.Set("X-Parse-Application-Id", h.ParseAppID)
-	findReq.Header.Set("X-Parse-Javascript-Key", h.ParseJSKey)
-
-	findResp, err := http.DefaultClient.Do(findReq)
+	req, err := http.NewRequest(http.MethodGet, queryURL, nil)
 	if err != nil {
-		http.Error(w, "Fehler bei Parse (Search)", http.StatusInternalServerError)
+		http.Error(w, "Interner Fehler", http.StatusInternalServerError)
 		return
 	}
-	defer findResp.Body.Close()
+
+	req.Header.Set("X-Parse-Application-Id", h.ParseAppID)
+	req.Header.Set("X-Parse-Javascript-Key", h.ParseJSKey)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		http.Error(w, "Fehler beim Suchen", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
 
 	var result struct {
 		Results []map[string]interface{} `json:"results"`
 	}
 
-	if err := json.NewDecoder(findResp.Body).Decode(&result); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		http.Error(w, "Ungültige Parse-Antwort", http.StatusInternalServerError)
 		return
 	}
 
-	if len(result.Results) == 0 {
+	switch len(result.Results) {
+	case 0:
 		http.Error(w, "Kind nicht gefunden", http.StatusNotFound)
 		return
-	}
-
-	if len(result.Results) > 1 {
-		http.Error(w, "Mehrdeutige Suchkriterien", http.StatusConflict)
+	case 1:
+		// OK
+	default:
+		http.Error(w, "Dateninkonsistenz: mehrere Treffer", http.StatusConflict)
 		return
 	}
 
-	objectId := result.Results[0]["objectId"].(string)
+	kind := result.Results[0]
+	objectId := kind["objectId"].(string)
 
-	// 2️⃣ Update durchführen
-	updateBody, _ := json.Marshal(reqBody.Update)
+	// 4️⃣ PATCH: bezahlt setzen
+	if r.Method == http.MethodPatch {
+		if bezahlt, ok := kind["bezahlt"].(bool); ok && bezahlt {
+			http.Error(w, "Kind bereits bezahlt", http.StatusConflict)
+			return
+		}
 
-	updateReq, _ := http.NewRequest(
-		"PUT",
-		h.ParseServerURL+"/classes/Kind/"+objectId,
-		bytes.NewBuffer(updateBody),
-	)
+		update := map[string]interface{}{
+			"bezahlt": true,
+		}
 
-	updateReq.Header.Set("X-Parse-Application-Id", h.ParseAppID)
-	updateReq.Header.Set("X-Parse-Javascript-Key", h.ParseJSKey)
-	updateReq.Header.Set("Content-Type", "application/json")
+		h.doUpdate(w, objectId, update)
+		return
+	}
 
-	updateResp, err := http.DefaultClient.Do(updateReq)
+	// 5️⃣ PUT: vollständiges Update
+	update := map[string]interface{}{
+		"vorName":    reqData.VorName,
+		"nachName":   reqData.NachName,
+		"jahrgang":   reqData.Jahrgang,
+		"geschlecht": reqData.Geschlecht,
+		"bezahlt":    kind["bezahlt"], // Status bleibt erhalten
+	}
+
+	h.doUpdate(w, objectId, update)
+}
+func (h *KindHandler) doUpdate(w http.ResponseWriter, objectId string, update map[string]interface{}) {
+	body, err := json.Marshal(update)
 	if err != nil {
-		http.Error(w, "Fehler bei Parse (Update)", http.StatusInternalServerError)
-		return
-	}
-	defer updateResp.Body.Close()
-
-	if updateResp.StatusCode != 200 {
-		http.Error(w, "Update fehlgeschlagen", updateResp.StatusCode)
+		http.Error(w, "Interner Fehler", http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	req, err := http.NewRequest(
+		http.MethodPut,
+		h.ParseServerURL+"/classes/Kind/"+objectId,
+		bytes.NewBuffer(body),
+	)
+	if err != nil {
+		http.Error(w, "Interner Fehler", http.StatusInternalServerError)
+		return
+	}
+
+	req.Header.Set("X-Parse-Application-Id", h.ParseAppID)
+	req.Header.Set("X-Parse-Javascript-Key", h.ParseJSKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		http.Error(w, "Fehler beim Update", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		http.Error(w, "Update fehlgeschlagen", resp.StatusCode)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
-		"message":  "Kind aktualisiert",
-		"objectId": objectId,
+		"message": "Kind erfolgreich aktualisiert",
 	})
 }
