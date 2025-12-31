@@ -42,7 +42,7 @@ func main() {
 	}
 	http.HandleFunc("/registerKind", kindHandler.RegisterKind)
 	http.HandleFunc("/kinder", kindHandler.GetKinder)
-	http.HandleFunc("/kinder/", kindHandler.UpdateKind)
+	//http.HandleFunc("/kinder/", kindHandler.UpdateKind)
 	//http.HandleFunc("/kind", kindHandler.GetKindByCriteria)
 	http.HandleFunc("/kind", kindHandler.UpdateKindByCriteria)
 

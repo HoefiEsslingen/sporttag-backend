@@ -21,42 +21,90 @@ type KindHandler struct {
 }
 
 func (h *KindHandler) RegisterKind(w http.ResponseWriter, r *http.Request) {
-	// Wenn kein Duplikat: Kind wie bisher hinzufügen…
-	if time.Now().After(h.Deadline) {
-		// Uhrzeit in UTc liegt zwei Stunden vor unserer Zeit
+	// CORS (optional, aber sauber)
+	w.Header().Set("Access-Control-Allow-Origin", "https://sporttag.b4a.app")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// 1️⃣ Method Guard
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// 2️⃣ JSON einlesen
+	var k strukturen.Kind
+	if err := json.NewDecoder(r.Body).Decode(&k); err != nil {
+		http.Error(w, "Ungültige JSON-Daten", http.StatusBadRequest)
+		return
+	}
+
+	// 3️⃣ Pflichtfelder prüfen (Consistency)
+	if k.VorName == "" || k.NachName == "" || k.Geschlecht == "" || k.Jahrgang == 0 {
+		http.Error(w, "Pflichtfelder fehlen", http.StatusBadRequest)
+		return
+	}
+
+	// 4️⃣ Deadline prüfen (UTC!)
+	now := time.Now().UTC()
+	if now.After(h.Deadline) {
+		// Uhrzeit in UTC liegt zwei Stunden vor unserer Zeit
 		http.Error(w, "Anmeldung geschlossen.", http.StatusForbidden)
 		return
 	}
 
-	// 1. Kind aus Request auslesen
-	var k strukturen.Kind
+	// 5️⃣ Eindeutigkeitsprüfung (Business-Key)
+	query := `{"vorName":"` + k.VorName +
+		`","nachName":"` + k.NachName +
+		`","jahrgang":` + strconv.Itoa(k.Jahrgang) +
+		`,"geschlecht":"` + k.Geschlecht + `"}`
 
-	if err := json.NewDecoder(r.Body).Decode(&k); err != nil {
-		http.Error(w, "Ungültige Daten.", http.StatusBadRequest)
+	queryURL := h.ParseServerURL + "/classes/Kind?where=" + url.QueryEscape(query)
+
+	req, err := http.NewRequest(http.MethodGet, queryURL, nil)
+	if err != nil {
+		http.Error(w, "Interner Fehler", http.StatusInternalServerError)
 		return
 	}
 
-	// 2. Prüfen, ob Kind (VorN, NachN, Jahrgang) schon existiert
-	queryURL := h.ParseServerURL + "/classes/Kind?where=" +
-		url.QueryEscape(`{"vorName":"`+k.VorName+`","nachName":"`+k.NachName+`","jahrgang":`+strconv.Itoa(k.Jahrgang)+`}`)
-	req, _ := http.NewRequest("GET", queryURL, nil)
 	req.Header.Set("X-Parse-Application-Id", h.ParseAppID)
 	req.Header.Set("X-Parse-Javascript-Key", h.ParseJSKey)
 	req.Header.Set("Content-Type", "application/json")
+
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		http.Error(w, "Fehler bei der Duplikat-Prüfung", http.StatusInternalServerError)
+		http.Error(w, "Fehler bei der Duplikatprüfung", http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()
+
 	var checkResult struct {
-		Results []interface{} `json:"results"`
+		Results []map[string]interface{} `json:"results"`
 	}
-	json.NewDecoder(resp.Body).Decode(&checkResult)
-	if len(checkResult.Results) > 0 {
-		http.Error(w, "Kind existiert bereits", http.StatusConflict)
+
+	if err := json.NewDecoder(resp.Body).Decode(&checkResult); err != nil {
+		http.Error(w, "Antwort von Parse ungültig", http.StatusInternalServerError)
 		return
 	}
+
+	// 6️⃣ Harte Eindeutigkeitsregeln
+	switch len(checkResult.Results) {
+	case 0:
+		// OK → weiter
+	case 1:
+		http.Error(w, "Kind existiert bereits", http.StatusConflict)
+		return
+	default:
+		http.Error(w, "Dateninkonsistenz: mehrere gleiche Kinder", http.StatusConflict)
+		return
+	}
+
+	// 7️⃣ Insert (Commit)
 	payload := map[string]interface{}{
 		"vorName":    k.VorName,
 		"nachName":   k.NachName,
@@ -65,38 +113,45 @@ func (h *KindHandler) RegisterKind(w http.ResponseWriter, r *http.Request) {
 		"bezahlt":    false,
 	}
 
-	// …und an Parse senden
-	w.Header().Set("Access-Control-Allow-Origin", "https://sporttag.b4a.app") // besser: domain deiner Webapp
-	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
+	body, err := json.Marshal(payload)
+	if err != nil {
+		http.Error(w, "Interner Fehler", http.StatusInternalServerError)
 		return
 	}
 
-	body, _ := json.Marshal(payload)
-	req, err = http.NewRequest("POST", h.ParseServerURL+"/classes/Kind", bytes.NewBuffer(body))
+	req, err = http.NewRequest(http.MethodPost, h.ParseServerURL+"/classes/Kind", bytes.NewBuffer(body))
 	if err != nil {
-		http.Error(w, "Fehler beim Erstellen", http.StatusInternalServerError)
+		http.Error(w, "Interner Fehler", http.StatusInternalServerError)
 		return
 	}
+
 	req.Header.Set("X-Parse-Application-Id", h.ParseAppID)
 	req.Header.Set("X-Parse-Javascript-Key", h.ParseJSKey)
 	req.Header.Set("Content-Type", "application/json")
+
 	resp, err = http.DefaultClient.Do(req)
 	if err != nil {
-		http.Error(w, "Fehler bei Parse", http.StatusInternalServerError)
+		http.Error(w, "Fehler beim Speichern", http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != 201 {
+
+	if resp.StatusCode != http.StatusCreated {
 		var pe map[string]interface{}
 		json.NewDecoder(resp.Body).Decode(&pe)
-		http.Error(w, "Parse: "+pe["error"].(string), resp.StatusCode)
+
+		msg := "Unbekannter Fehler bei Parse"
+		if e, ok := pe["error"].(string); ok {
+			msg = e
+		}
+
+		http.Error(w, "Parse: "+msg, resp.StatusCode)
 		return
 	}
+
 	var out map[string]interface{}
 	json.NewDecoder(resp.Body).Decode(&out)
+
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"objectId": out["objectId"],
@@ -192,6 +247,7 @@ func (h *KindHandler) UpdateKind(w http.ResponseWriter, r *http.Request) {
 		"message": "Kind aktualisiert",
 	})
 }
+
 func (h *KindHandler) GetKindByCriteria(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 
