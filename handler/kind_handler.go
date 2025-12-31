@@ -3,6 +3,7 @@ package handler
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -100,4 +101,41 @@ func (h *KindHandler) RegisterKind(w http.ResponseWriter, r *http.Request) {
 		"objectId": out["objectId"],
 		"message":  "Kind erfolgreich gespeichert",
 	})
+}
+
+func (h *KindHandler) GetKinder(w http.ResponseWriter, r *http.Request) {
+	req, err := http.NewRequest(
+		"GET",
+		h.ParseServerURL+"/classes/Kind",
+		nil,
+	)
+	if err != nil {
+		http.Error(w, "Fehler beim Request", http.StatusInternalServerError)
+		return
+	}
+
+	req.Header.Set("X-Parse-Application-Id", h.ParseAppID)
+	req.Header.Set("X-Parse-Javascript-Key", h.ParseJSKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		http.Error(w, "Fehler bei Parse", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		http.Error(w, "Parse-Fehler", resp.StatusCode)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{`))
+
+	// Antwort 1:1 durchreichen
+	w.Write([]byte(`"results":`))
+	io.Copy(w, resp.Body)
+	w.Write([]byte(`}`))
 }

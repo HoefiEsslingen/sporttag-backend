@@ -41,6 +41,7 @@ func main() {
 		ParseServerURL: config.ParseServerURL,
 	}
 	http.HandleFunc("/registerKind", kindHandler.RegisterKind)
+	http.HandleFunc("/kinder", kindHandler.GetKinder)
 
 	port := os.Getenv("PORT")
 	if port == "" {
