@@ -303,14 +303,16 @@ func (h *KindHandler) doConditionalUpdateWithVersion(
 		return
 	}
 
-	if _, ok := out["updatedAt"]; !ok {
-		http.Error(
-			w,
-			"Konflikt: Datensatz wurde zwischenzeitlich geändert",
-			http.StatusConflict,
-		)
-		return
-	}
+	/*
+		if _, ok := out["updatedAt"]; !ok {
+			http.Error(
+				w,
+				"Konflikt: Datensatz wurde zwischenzeitlich geändert",
+				http.StatusConflict,
+			)
+			return
+		}
+	*/
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
