@@ -12,7 +12,7 @@ import (
 // ===== Request-Strukturen =====
 //
 
-// Suchkriterien = Business Key (unveränderlich)
+// ===== Suchkriterien (Business-Key) =====
 type KindSearch struct {
 	VorName    string `json:"vorName"`
 	NachName   string `json:"nachName"`
@@ -20,10 +20,24 @@ type KindSearch struct {
 	Geschlecht string `json:"geschlecht"`
 }
 
-// Update-Request mit klarer Trennung
+// ===== Vollständiges Update (PUT) =====
+type KindUpdateFull struct {
+	VorName    string `json:"vorName"`
+	NachName   string `json:"nachName"`
+	Jahrgang   int    `json:"jahrgang"`
+	Geschlecht string `json:"geschlecht"`
+	Bezahlt    bool   `json:"bezahlt"`
+}
+
+// ===== PATCH-Request (bezahlt=true) =====
+type KindUpdatePaid struct {
+	Bezahlt bool `json:"bezahlt"`
+}
+
+// ===== Gesamt-Request =====
 type KindUpdateRequest struct {
-	Search KindSearch             `json:"search"`
-	Update map[string]interface{} `json:"update"`
+	Search KindSearch      `json:"search"`
+	Update json.RawMessage `json:"update"`
 }
 
 //
@@ -33,7 +47,7 @@ type KindUpdateRequest struct {
 func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Request) {
 	// CORS
 	w.Header().Set("Access-Control-Allow-Origin", "https://sporttag.b4a.app")
-	w.Header().Set("Access-Control-Allow-Methods", "PATCH, PUT, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Methods", "PUT, PATCH, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
 	if r.Method == http.MethodOptions {
@@ -41,54 +55,64 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// 1️⃣ Nur PATCH oder PUT
-	if r.Method != http.MethodPatch && r.Method != http.MethodPut {
+	if r.Method != http.MethodPut && r.Method != http.MethodPatch {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// 2️⃣ Request dekodieren
+	// ===== Decode Root =====
 	var req KindUpdateRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Ungültige JSON-Daten", http.StatusBadRequest)
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+
+	if err := dec.Decode(&req); err != nil {
+		http.Error(w, "Ungültiges JSON: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// 3️⃣ Pflichtfelder für Suche prüfen (Consistency)
+	// ===== Validate Search =====
 	s := req.Search
 	if s.VorName == "" || s.NachName == "" || s.Geschlecht == "" || s.Jahrgang == 0 {
-		http.Error(w, "Pflichtfeld fehlt", http.StatusBadRequest)
+		http.Error(w, "Pflichtfeld in search fehlt", http.StatusBadRequest)
 		return
 	}
 
-	// 4️⃣ Kind eindeutig suchen (Atomicity-Teil 1)
-	kind, err := h.findKindBySearch(s)
+	// ===== Find Kind (Atomicity Teil 1) =====
+	kinder, err := h.findKindBySearch(s)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	switch len(kind) {
-	case 0:
+	if len(kinder) == 0 {
 		http.Error(w, "Kind nicht gefunden", http.StatusNotFound)
 		return
-	case 1:
-		// OK
-	default:
+	}
+	if len(kinder) > 1 {
 		http.Error(w, "Dateninkonsistenz: mehrere gleiche Kinder", http.StatusConflict)
 		return
 	}
 
-	obj := kind[0]
-	objectId, ok := obj["objectId"].(string)
-	if !ok {
-		http.Error(w, "Ungültige Objekt-ID", http.StatusInternalServerError)
-		return
-	}
+	obj := kinder[0]
+	objectId := obj["objectId"].(string)
 
-	// 5️⃣ PATCH: bezahlt = true (idempotent)
+	// ===== PATCH: bezahlt=true =====
 	if r.Method == http.MethodPatch {
-		if bezahlt, ok := obj["bezahlt"].(bool); ok && bezahlt {
+		var upd KindUpdatePaid
+		dec := json.NewDecoder(bytes.NewReader(req.Update))
+		dec.DisallowUnknownFields()
+
+		if err := dec.Decode(&upd); err != nil {
+			http.Error(w, "Ungültiges PATCH-Update: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if upd.Bezahlt != true {
+			http.Error(w, "PATCH erlaubt nur bezahlt=true", http.StatusBadRequest)
+			return
+		}
+
+		if obj["bezahlt"] == true {
 			http.Error(w, "Kind bereits bezahlt", http.StatusConflict)
 			return
 		}
@@ -99,13 +123,40 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// 6️⃣ PUT: kompletter Datensatz
-	if len(req.Update) == 0 {
-		http.Error(w, "Update-Daten fehlen", http.StatusBadRequest)
+	// ===== PUT: kompletter Datensatz =====
+	var upd KindUpdateFull
+	dec = json.NewDecoder(bytes.NewReader(req.Update))
+	dec.DisallowUnknownFields()
+
+	if err := dec.Decode(&upd); err != nil {
+		http.Error(w, "Ungültiges PUT-Update: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	h.doUpdate(w, objectId, req.Update)
+	// Pflichtfelder prüfen
+	if upd.VorName == "" || upd.NachName == "" || upd.Geschlecht == "" || upd.Jahrgang == 0 {
+		http.Error(w, "Pflichtfeld im Update fehlt", http.StatusBadRequest)
+		return
+	}
+
+	// ===== Maßnahme C: echte Änderung? =====
+	if obj["vorName"] == upd.VorName &&
+		obj["nachName"] == upd.NachName &&
+		int(obj["jahrgang"].(float64)) == upd.Jahrgang &&
+		obj["geschlecht"] == upd.Geschlecht &&
+		obj["bezahlt"] == upd.Bezahlt {
+
+		http.Error(w, "Update hätte keine Änderung bewirkt", http.StatusConflict)
+		return
+	}
+
+	h.doUpdate(w, objectId, map[string]interface{}{
+		"vorName":    upd.VorName,
+		"nachName":   upd.NachName,
+		"jahrgang":   upd.Jahrgang,
+		"geschlecht": upd.Geschlecht,
+		"bezahlt":    upd.Bezahlt,
+	})
 }
 
 //
