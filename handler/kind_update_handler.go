@@ -36,9 +36,9 @@ type KindUpdatePaid struct {
 
 // Root-Request
 type KindUpdateRequest struct {
-	Search            KindSearch      `json:"search"`
-	Update            json.RawMessage `json:"update"`
-	ExpectedUpdatedAt string          `json:"expectedUpdatedAt"`
+	Search          KindSearch      `json:"search"`
+	Update          json.RawMessage `json:"update"`
+	ExpectedVersion int             `json:"expectedVersion"`
 }
 
 //
@@ -70,7 +70,7 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// ---- Decode Root (Phase 1) ----
+	// ---- Decode Root ----
 	var req KindUpdateRequest
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
@@ -87,12 +87,12 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if req.ExpectedUpdatedAt == "" {
-		http.Error(w, "expectedUpdatedAt fehlt", http.StatusBadRequest)
+	if req.ExpectedVersion <= 0 {
+		http.Error(w, "expectedVersion fehlt oder ungültig", http.StatusBadRequest)
 		return
 	}
 
-	// ---- Find Kind (Eindeutigkeit) ----
+	// ---- Find Kind ----
 	kinder, err := h.findKindBySearch(s)
 	if err != nil {
 		http.Error(w, "Fehler bei der Suche", http.StatusInternalServerError)
@@ -109,13 +109,20 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 	}
 
 	obj := kinder[0]
+
 	objectId, ok := obj["objectId"].(string)
 	if !ok {
 		http.Error(w, "objectId fehlt", http.StatusInternalServerError)
 		return
 	}
 
-	// ---- Validate Update Keys (Phase 2a) ----
+	currentVersion := int(obj["version"].(float64))
+	if currentVersion != req.ExpectedVersion {
+		http.Error(w, "Konflikt: Version veraltet", http.StatusConflict)
+		return
+	}
+
+	// ---- Validate Update Keys ----
 	var raw map[string]json.RawMessage
 	if err := json.Unmarshal(req.Update, &raw); err != nil {
 		http.Error(w, "Ungültiges Update-JSON", http.StatusBadRequest)
@@ -131,6 +138,7 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 
 	// ---- PATCH: bezahlt=true ----
 	if r.Method == http.MethodPatch {
+
 		var upd KindUpdatePaid
 		dec := json.NewDecoder(bytes.NewReader(req.Update))
 		dec.DisallowUnknownFields()
@@ -150,11 +158,13 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 			return
 		}
 
-		h.doConditionalUpdate(
+		h.doConditionalUpdateWithVersion(
 			w,
 			objectId,
-			req.ExpectedUpdatedAt,
-			map[string]interface{}{"bezahlt": true},
+			req.ExpectedVersion,
+			map[string]interface{}{
+				"bezahlt": true,
+			},
 		)
 		return
 	}
@@ -185,10 +195,10 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	h.doConditionalUpdate(
+	h.doConditionalUpdateWithVersion(
 		w,
 		objectId,
-		req.ExpectedUpdatedAt,
+		req.ExpectedVersion,
 		map[string]interface{}{
 			"vorName":    upd.VorName,
 			"nachName":   upd.NachName,
@@ -233,26 +243,24 @@ func (h *KindHandler) findKindBySearch(s KindSearch) ([]map[string]interface{}, 
 }
 
 //
-// ===== Conditional PUT (Optimistic Locking) =====
-// Max Mustermann: updatedAt = 2026-01-01T10:57:27.527Z
+// ===== Conditional PUT mit Version-Locking =====
+//
 
-func (h *KindHandler) doConditionalUpdate(
+func (h *KindHandler) doConditionalUpdateWithVersion(
 	w http.ResponseWriter,
 	objectId string,
-	expectedUpdatedAt string,
+	expectedVersion int,
 	update map[string]interface{},
 ) {
-	// WHERE-Klausel
 	where := map[string]interface{}{
 		"objectId": objectId,
-		"updatedAt": map[string]interface{}{
-			"__type": "Date",
-			"iso":    expectedUpdatedAt,
-		},
+		"version":  expectedVersion,
 	}
 
 	whereJSON, _ := json.Marshal(where)
 	query := "?where=" + url.QueryEscape(string(whereJSON))
+
+	update["version"] = expectedVersion + 1
 
 	body, err := json.Marshal(update)
 	if err != nil {
@@ -287,7 +295,6 @@ func (h *KindHandler) doConditionalUpdate(
 		return
 	}
 
-	// 🔑 DAS ist der entscheidende Punkt
 	if _, ok := out["updatedAt"]; !ok {
 		http.Error(
 			w,
