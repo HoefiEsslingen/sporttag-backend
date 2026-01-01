@@ -3,6 +3,7 @@ package handler
 import (
 	"bytes"
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -46,6 +47,13 @@ type KindUpdateRequest struct {
 //
 
 func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Request) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("PANIC:", r)
+			http.Error(w, "Interner Serverfehler", http.StatusInternalServerError)
+		}
+	}()
 
 	allowedUpdateKeys := map[string]bool{
 		"vorName":    true,
@@ -116,7 +124,7 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	currentVersion := int(obj["version"].(int64))
+	currentVersion := int(obj["version"].(float64))
 	if currentVersion != req.ExpectedVersion {
 		http.Error(w, "Konflikt: Version veraltet", http.StatusConflict)
 		return
