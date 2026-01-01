@@ -268,7 +268,11 @@ func (h *KindHandler) doConditionalUpdateWithVersion(
 	whereJSON, _ := json.Marshal(where)
 	query := "?where=" + url.QueryEscape(string(whereJSON))
 
-	update["version"] = expectedVersion + 1
+	//update["version"] = expectedVersion + 1
+	update["version"] = map[string]interface{}{
+		"__op":   "Increment",
+		"amount": 1,
+	}
 
 	body, err := json.Marshal(update)
 	if err != nil {
