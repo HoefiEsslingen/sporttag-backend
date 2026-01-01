@@ -234,7 +234,7 @@ func (h *KindHandler) findKindBySearch(s KindSearch) ([]map[string]interface{}, 
 
 //
 // ===== Conditional PUT (Optimistic Locking) =====
-//
+// Max Mustermann: updatedAt = 2026-01-01T10:57:27.527Z
 
 func (h *KindHandler) doConditionalUpdate(
 	w http.ResponseWriter,
@@ -242,6 +242,7 @@ func (h *KindHandler) doConditionalUpdate(
 	expectedUpdatedAt string,
 	update map[string]interface{},
 ) {
+	// WHERE-Klausel
 	where := map[string]interface{}{
 		"objectId": objectId,
 		"updatedAt": map[string]interface{}{
@@ -280,13 +281,19 @@ func (h *KindHandler) doConditionalUpdate(
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusNotFound {
-		http.Error(w, "Konflikt: Datensatz wurde zwischenzeitlich geändert", http.StatusConflict)
+	var out map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		http.Error(w, "Ungültige Parse-Antwort", http.StatusInternalServerError)
 		return
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		http.Error(w, "Update fehlgeschlagen", resp.StatusCode)
+	// 🔑 DAS ist der entscheidende Punkt
+	if _, ok := out["updatedAt"]; !ok {
+		http.Error(
+			w,
+			"Konflikt: Datensatz wurde zwischenzeitlich geändert",
+			http.StatusConflict,
+		)
 		return
 	}
 
