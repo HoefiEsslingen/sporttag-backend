@@ -116,7 +116,7 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	currentVersion := int(obj["version"].(float64))
+	currentVersion := int(obj["version"].(int64))
 	if currentVersion != req.ExpectedVersion {
 		http.Error(w, "Konflikt: Version veraltet", http.StatusConflict)
 		return
