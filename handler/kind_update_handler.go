@@ -46,6 +46,14 @@ type KindUpdateRequest struct {
 //
 
 func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Request) {
+	var allowedUpdateKeys = map[string]bool{
+		"vorName":    true,
+		"nachName":   true,
+		"jahrgang":   true,
+		"geschlecht": true,
+		"bezahlt":    true,
+	}
+
 	// CORS
 	w.Header().Set("Access-Control-Allow-Origin", "https://sporttag.b4a.app")
 	w.Header().Set("Access-Control-Allow-Methods", "PUT, PATCH, OPTIONS")
@@ -98,6 +106,9 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 	objectId := obj["objectId"].(string)
 	// Optimistic Locking
 	// ===== Atomicity Teil 2: Prüfen, ob Datensatz unverändert ist =====
+	// letztes Update-Zeitstempel aus DB mit erwartetem Wert vergleichen: curl https://sporttag-backend.onrender.com/kinder
+	// bzw.
+
 	dbUpdatedAt, ok := obj["updatedAt"].(string)
 	if !ok {
 		http.Error(w, "updatedAt fehlt im Datensatz", http.StatusInternalServerError)
@@ -115,6 +126,24 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 			http.StatusConflict,
 		)
 		return
+	}
+
+	// ===== Validate Update =====
+	var rawUpdate map[string]json.RawMessage
+	if err := json.Unmarshal(req.Update, &rawUpdate); err != nil {
+		http.Error(w, "Ungültiges Update-JSON", http.StatusBadRequest)
+		return
+	}
+
+	for key := range rawUpdate {
+		if !allowedUpdateKeys[key] {
+			http.Error(
+				w,
+				"Ungültiges Feld im Update: "+key,
+				http.StatusBadRequest,
+			)
+			return
+		}
 	}
 
 	// ===== PATCH: bezahlt=true =====
