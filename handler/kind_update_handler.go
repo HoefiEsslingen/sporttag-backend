@@ -36,8 +36,9 @@ type KindUpdatePaid struct {
 
 // ===== Gesamt-Request =====
 type KindUpdateRequest struct {
-	Search KindSearch      `json:"search"`
-	Update json.RawMessage `json:"update"`
+	Search            KindSearch      `json:"search"`
+	Update            json.RawMessage `json:"update"`
+	ExpectedUpdatedAt string          `json:"expectedUpdatedAt"`
 }
 
 //
@@ -95,6 +96,26 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 
 	obj := kinder[0]
 	objectId := obj["objectId"].(string)
+	// Optimistic Locking
+	// ===== Atomicity Teil 2: Prüfen, ob Datensatz unverändert ist =====
+	dbUpdatedAt, ok := obj["updatedAt"].(string)
+	if !ok {
+		http.Error(w, "updatedAt fehlt im Datensatz", http.StatusInternalServerError)
+		return
+	}
+	if req.ExpectedUpdatedAt == "" {
+		http.Error(w, "expectedUpdatedAt fehlt", http.StatusBadRequest)
+		return
+	}
+
+	if req.ExpectedUpdatedAt != dbUpdatedAt {
+		http.Error(
+			w,
+			"Datensatz wurde zwischenzeitlich geändert",
+			http.StatusConflict,
+		)
+		return
+	}
 
 	// ===== PATCH: bezahlt=true =====
 	if r.Method == http.MethodPatch {
