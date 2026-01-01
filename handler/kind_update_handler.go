@@ -12,7 +12,7 @@ import (
 // ===== Request-Strukturen =====
 //
 
-// ===== Suchkriterien (Business-Key) =====
+// Business-Key (unveränderlich)
 type KindSearch struct {
 	VorName    string `json:"vorName"`
 	NachName   string `json:"nachName"`
@@ -20,7 +20,7 @@ type KindSearch struct {
 	Geschlecht string `json:"geschlecht"`
 }
 
-// ===== Vollständiges Update (PUT) =====
+// PUT – vollständiges Update
 type KindUpdateFull struct {
 	VorName    string `json:"vorName"`
 	NachName   string `json:"nachName"`
@@ -29,12 +29,12 @@ type KindUpdateFull struct {
 	Bezahlt    bool   `json:"bezahlt"`
 }
 
-// ===== PATCH-Request (bezahlt=true) =====
+// PATCH – nur bezahlt=true
 type KindUpdatePaid struct {
 	Bezahlt bool `json:"bezahlt"`
 }
 
-// ===== Gesamt-Request =====
+// Root-Request
 type KindUpdateRequest struct {
 	Search            KindSearch      `json:"search"`
 	Update            json.RawMessage `json:"update"`
@@ -42,11 +42,12 @@ type KindUpdateRequest struct {
 }
 
 //
-// ===== Haupt-Handler =====
+// ===== Handler =====
 //
 
 func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Request) {
-	var allowedUpdateKeys = map[string]bool{
+
+	allowedUpdateKeys := map[string]bool{
 		"vorName":    true,
 		"nachName":   true,
 		"jahrgang":   true,
@@ -54,7 +55,7 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 		"bezahlt":    true,
 	}
 
-	// CORS
+	// ---- CORS ----
 	w.Header().Set("Access-Control-Allow-Origin", "https://sporttag.b4a.app")
 	w.Header().Set("Access-Control-Allow-Methods", "PUT, PATCH, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
@@ -69,7 +70,7 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// ===== Decode Root =====
+	// ---- Decode Root (Phase 1) ----
 	var req KindUpdateRequest
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
@@ -79,17 +80,22 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// ===== Validate Search =====
+	// ---- Validate Search ----
 	s := req.Search
 	if s.VorName == "" || s.NachName == "" || s.Geschlecht == "" || s.Jahrgang == 0 {
 		http.Error(w, "Pflichtfeld in search fehlt", http.StatusBadRequest)
 		return
 	}
 
-	// ===== Find Kind (Atomicity Teil 1) =====
+	if req.ExpectedUpdatedAt == "" {
+		http.Error(w, "expectedUpdatedAt fehlt", http.StatusBadRequest)
+		return
+	}
+
+	// ---- Find Kind (Eindeutigkeit) ----
 	kinder, err := h.findKindBySearch(s)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Fehler bei der Suche", http.StatusInternalServerError)
 		return
 	}
 
@@ -103,57 +109,34 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 	}
 
 	obj := kinder[0]
-	objectId := obj["objectId"].(string)
-	// Optimistic Locking
-	// ===== Atomicity Teil 2: Prüfen, ob Datensatz unverändert ist =====
-	// letztes Update-Zeitstempel aus DB mit erwartetem Wert vergleichen: curl https://sporttag-backend.onrender.com/kinder
-	// bzw.
-
-	dbUpdatedAt, ok := obj["updatedAt"].(string)
+	objectId, ok := obj["objectId"].(string)
 	if !ok {
-		http.Error(w, "updatedAt fehlt im Datensatz", http.StatusInternalServerError)
-		return
-	}
-	if req.ExpectedUpdatedAt == "" {
-		http.Error(w, "expectedUpdatedAt fehlt", http.StatusBadRequest)
+		http.Error(w, "objectId fehlt", http.StatusInternalServerError)
 		return
 	}
 
-	if req.ExpectedUpdatedAt != dbUpdatedAt {
-		http.Error(
-			w,
-			"Datensatz wurde zwischenzeitlich geändert",
-			http.StatusConflict,
-		)
-		return
-	}
-
-	// ===== Validate Update =====
-	var rawUpdate map[string]json.RawMessage
-	if err := json.Unmarshal(req.Update, &rawUpdate); err != nil {
+	// ---- Validate Update Keys (Phase 2a) ----
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(req.Update, &raw); err != nil {
 		http.Error(w, "Ungültiges Update-JSON", http.StatusBadRequest)
 		return
 	}
 
-	for key := range rawUpdate {
-		if !allowedUpdateKeys[key] {
-			http.Error(
-				w,
-				"Ungültiges Feld im Update: "+key,
-				http.StatusBadRequest,
-			)
+	for k := range raw {
+		if !allowedUpdateKeys[k] {
+			http.Error(w, "Ungültiges Update-Feld: "+k, http.StatusBadRequest)
 			return
 		}
 	}
 
-	// ===== PATCH: bezahlt=true =====
+	// ---- PATCH: bezahlt=true ----
 	if r.Method == http.MethodPatch {
 		var upd KindUpdatePaid
 		dec := json.NewDecoder(bytes.NewReader(req.Update))
 		dec.DisallowUnknownFields()
 
 		if err := dec.Decode(&upd); err != nil {
-			http.Error(w, "Ungültiges PATCH-Update: "+err.Error(), http.StatusBadRequest)
+			http.Error(w, "Ungültiges PATCH-Update", http.StatusBadRequest)
 			return
 		}
 
@@ -167,29 +150,31 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 			return
 		}
 
-		h.doUpdate(w, objectId, map[string]interface{}{
-			"bezahlt": true,
-		})
+		h.doConditionalUpdate(
+			w,
+			objectId,
+			req.ExpectedUpdatedAt,
+			map[string]interface{}{"bezahlt": true},
+		)
 		return
 	}
 
-	// ===== PUT: kompletter Datensatz =====
+	// ---- PUT: kompletter Datensatz ----
 	var upd KindUpdateFull
 	dec = json.NewDecoder(bytes.NewReader(req.Update))
 	dec.DisallowUnknownFields()
 
 	if err := dec.Decode(&upd); err != nil {
-		http.Error(w, "Ungültiges PUT-Update: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, "Ungültiges PUT-Update", http.StatusBadRequest)
 		return
 	}
 
-	// Pflichtfelder prüfen
 	if upd.VorName == "" || upd.NachName == "" || upd.Geschlecht == "" || upd.Jahrgang == 0 {
 		http.Error(w, "Pflichtfeld im Update fehlt", http.StatusBadRequest)
 		return
 	}
 
-	// ===== Maßnahme C: echte Änderung? =====
+	// ---- echte Änderung? ----
 	if obj["vorName"] == upd.VorName &&
 		obj["nachName"] == upd.NachName &&
 		int(obj["jahrgang"].(float64)) == upd.Jahrgang &&
@@ -200,36 +185,39 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	h.doUpdate(w, objectId, map[string]interface{}{
-		"vorName":    upd.VorName,
-		"nachName":   upd.NachName,
-		"jahrgang":   upd.Jahrgang,
-		"geschlecht": upd.Geschlecht,
-		"bezahlt":    upd.Bezahlt,
-	})
+	h.doConditionalUpdate(
+		w,
+		objectId,
+		req.ExpectedUpdatedAt,
+		map[string]interface{}{
+			"vorName":    upd.VorName,
+			"nachName":   upd.NachName,
+			"jahrgang":   upd.Jahrgang,
+			"geschlecht": upd.Geschlecht,
+			"bezahlt":    upd.Bezahlt,
+		},
+	)
 }
 
 //
 // ===== Hilfsfunktionen =====
 //
 
-// Kind eindeutig über Business-Key suchen
 func (h *KindHandler) findKindBySearch(s KindSearch) ([]map[string]interface{}, error) {
 	query := `{"vorName":"` + s.VorName +
 		`","nachName":"` + s.NachName +
 		`","jahrgang":` + strconv.Itoa(s.Jahrgang) +
 		`,"geschlecht":"` + s.Geschlecht + `"}`
 
-	queryURL := h.ParseServerURL + "/classes/Kind?where=" + url.QueryEscape(query)
+	url := h.ParseServerURL + "/classes/Kind?where=" + url.QueryEscape(query)
 
-	req, err := http.NewRequest(http.MethodGet, queryURL, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	req.Header.Set("X-Parse-Application-Id", h.ParseAppID)
 	req.Header.Set("X-Parse-Javascript-Key", h.ParseJSKey)
-	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -237,19 +225,34 @@ func (h *KindHandler) findKindBySearch(s KindSearch) ([]map[string]interface{}, 
 	}
 	defer resp.Body.Close()
 
-	var result struct {
+	var out struct {
 		Results []map[string]interface{} `json:"results"`
 	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
-	}
-
-	return result.Results, nil
+	err = json.NewDecoder(resp.Body).Decode(&out)
+	return out.Results, err
 }
 
-// Tatsächliches Update (Commit)
-func (h *KindHandler) doUpdate(w http.ResponseWriter, objectId string, update map[string]interface{}) {
+//
+// ===== Conditional PUT (Optimistic Locking) =====
+//
+
+func (h *KindHandler) doConditionalUpdate(
+	w http.ResponseWriter,
+	objectId string,
+	expectedUpdatedAt string,
+	update map[string]interface{},
+) {
+	where := map[string]interface{}{
+		"objectId": objectId,
+		"updatedAt": map[string]interface{}{
+			"__type": "Date",
+			"iso":    expectedUpdatedAt,
+		},
+	}
+
+	whereJSON, _ := json.Marshal(where)
+	query := "?where=" + url.QueryEscape(string(whereJSON))
+
 	body, err := json.Marshal(update)
 	if err != nil {
 		http.Error(w, "Interner Fehler", http.StatusInternalServerError)
@@ -258,7 +261,7 @@ func (h *KindHandler) doUpdate(w http.ResponseWriter, objectId string, update ma
 
 	req, err := http.NewRequest(
 		http.MethodPut,
-		h.ParseServerURL+"/classes/Kind/"+objectId,
+		h.ParseServerURL+"/classes/Kind"+query,
 		bytes.NewBuffer(body),
 	)
 	if err != nil {
@@ -272,10 +275,15 @@ func (h *KindHandler) doUpdate(w http.ResponseWriter, objectId string, update ma
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		http.Error(w, "Fehler beim Update", http.StatusInternalServerError)
+		http.Error(w, "Update fehlgeschlagen", http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		http.Error(w, "Konflikt: Datensatz wurde zwischenzeitlich geändert", http.StatusConflict)
+		return
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		http.Error(w, "Update fehlgeschlagen", resp.StatusCode)
