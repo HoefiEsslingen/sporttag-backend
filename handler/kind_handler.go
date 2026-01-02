@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -33,15 +34,18 @@ type KindHandler struct {
 }
 
 func (h *KindHandler) RegisterKind(w http.ResponseWriter, r *http.Request) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("PANIC:", r)
+			http.Error(w, "Interner Serverfehler", http.StatusInternalServerError)
+		}
+	}()
+
 	// CORS (optional, aber sauber)
 	w.Header().Set("Access-Control-Allow-Origin", "https://sporttag.b4a.app")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
 
 	// 1️⃣ Method Guard
 	if r.Method != http.MethodPost {
@@ -53,6 +57,29 @@ func (h *KindHandler) RegisterKind(w http.ResponseWriter, r *http.Request) {
 	var k strukturen.Kind
 	if err := json.NewDecoder(r.Body).Decode(&k); err != nil {
 		http.Error(w, "Ungültige JSON-Daten", http.StatusBadRequest)
+		return
+	}
+
+	// 🔑 Business-Key
+	key := kindBusinessKeyFromKind(k)
+
+	// 🔒 Lock holen
+	lock := h.lockForKey(key)
+
+	// 🔐 exklusiv sperren
+	select {
+	case lock <- struct{}{}:
+		// Lock erhalten
+		defer func() {
+			<-lock // Lock freigeben
+		}()
+	default:
+		http.Error(w, "Kind wird bereits erfasst", http.StatusConflict)
+		return
+	}
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
@@ -225,4 +252,11 @@ func kindBusinessKey(s KindSearch) string {
 		s.NachName + "|" +
 		strconv.Itoa(s.Jahrgang) + "|" +
 		s.Geschlecht
+}
+
+func kindBusinessKeyFromKind(k strukturen.Kind) string {
+	return k.VorName + "|" +
+		k.NachName + "|" +
+		strconv.Itoa(k.Jahrgang) + "|" +
+		k.Geschlecht
 }
