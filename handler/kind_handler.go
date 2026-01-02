@@ -7,16 +7,29 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"sync"
 	"time"
 
 	"sporttag/strukturen"
 )
 
+/*
 type KindHandler struct {
 	Deadline       time.Time
 	ParseAppID     string
 	ParseJSKey     string
 	ParseServerURL string
+}
+*/
+// z.B. in kind_handler.go oder handler_struct.go
+
+type KindHandler struct {
+	Deadline       time.Time
+	ParseServerURL string
+	ParseAppID     string
+	ParseJSKey     string
+
+	locks sync.Map // map[string]*sync.Mutex
 }
 
 func (h *KindHandler) RegisterKind(w http.ResponseWriter, r *http.Request) {
@@ -193,4 +206,16 @@ func (h *KindHandler) GetKinder(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`"results":`))
 	io.Copy(w, resp.Body)
 	w.Write([]byte(`}`))
+}
+
+func (h *KindHandler) mutexForKey(key string) *sync.Mutex {
+	actual, _ := h.locks.LoadOrStore(key, &sync.Mutex{})
+	return actual.(*sync.Mutex)
+}
+
+func kindBusinessKey(s KindSearch) string {
+	return s.VorName + "|" +
+		s.NachName + "|" +
+		strconv.Itoa(s.Jahrgang) + "|" +
+		s.Geschlecht
 }

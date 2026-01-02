@@ -100,6 +100,32 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// ---- GLOBALER LOCK PRO KIND ----
+	key := kindBusinessKey(req.Search)
+	mtx := h.mutexForKey(key)
+
+	// try-lock (nicht blockierend!)
+	locked := make(chan struct{}, 1)
+
+	go func() {
+		mtx.Lock()
+		locked <- struct{}{}
+	}()
+
+	select {
+	case <-locked:
+		// Lock erhalten
+		defer mtx.Unlock()
+
+	default:
+		http.Error(
+			w,
+			"Konflikt: Kind wird bereits bearbeitet",
+			http.StatusConflict,
+		)
+		return
+	}
+
 	// ---- Find Kind ----
 	kinder, err := h.findKindBySearch(s)
 	if err != nil {
