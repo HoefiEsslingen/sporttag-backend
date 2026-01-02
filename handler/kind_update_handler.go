@@ -102,20 +102,21 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 
 	// ---- GLOBALER LOCK PRO KIND ----
 	key := kindBusinessKey(req.Search)
-	mtx := h.mutexForKey(key)
+	//	mtx := h.mutexForKey(key)
+	lock := h.lockForKey(key)
+	/*
+		// try-lock (nicht blockierend!)
+		locked := make(chan struct{}, 1)
 
-	// try-lock (nicht blockierend!)
-	locked := make(chan struct{}, 1)
-
-	go func() {
-		mtx.Lock()
-		locked <- struct{}{}
-	}()
-
+		go func() {
+			mtx.Lock()
+			locked <- struct{}{}
+		}()
+	*/
 	select {
-	case <-locked:
+	case lock <- struct{}{}:
 		// Lock erhalten
-		defer mtx.Unlock()
+		defer func() { <-lock }()
 
 	default:
 		http.Error(

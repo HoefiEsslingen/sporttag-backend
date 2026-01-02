@@ -29,7 +29,7 @@ type KindHandler struct {
 	ParseAppID     string
 	ParseJSKey     string
 
-	locks sync.Map // map[string]*sync.Mutex
+	locks sync.Map // map[string]chan.Mutex
 }
 
 func (h *KindHandler) RegisterKind(w http.ResponseWriter, r *http.Request) {
@@ -208,9 +208,16 @@ func (h *KindHandler) GetKinder(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`}`))
 }
 
+/**
 func (h *KindHandler) mutexForKey(key string) *sync.Mutex {
 	actual, _ := h.locks.LoadOrStore(key, &sync.Mutex{})
 	return actual.(*sync.Mutex)
+}
+**/
+
+func (h *KindHandler) lockForKey(key string) chan struct{} {
+	actual, _ := h.locks.LoadOrStore(key, make(chan struct{}, 1))
+	return actual.(chan struct{})
 }
 
 func kindBusinessKey(s KindSearch) string {
