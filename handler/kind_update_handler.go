@@ -260,15 +260,7 @@ func (h *KindHandler) doConditionalUpdateWithVersion(
 	expectedVersion int,
 	update map[string]interface{},
 ) {
-	where := map[string]interface{}{
-		"objectId": objectId,
-		"version":  expectedVersion,
-	}
-
-	whereJSON, _ := json.Marshal(where)
-	query := "?where=" + url.QueryEscape(string(whereJSON))
-
-	//update["version"] = expectedVersion + 1
+	// 🔐 atomare Versionserhöhung
 	update["version"] = map[string]interface{}{
 		"__op":   "Increment",
 		"amount": 1,
@@ -280,9 +272,18 @@ func (h *KindHandler) doConditionalUpdateWithVersion(
 		return
 	}
 
+	// ⚠️ ENTSCHEIDEND:
+	// objectId IM PFAD + where NUR für version
+	where := map[string]interface{}{
+		"version": expectedVersion,
+	}
+	whereJSON, _ := json.Marshal(where)
+
 	req, err := http.NewRequest(
 		http.MethodPut,
-		h.ParseServerURL+"/classes/Kind"+query,
+		h.ParseServerURL+
+			"/classes/Kind/"+objectId+
+			"?where="+url.QueryEscape(string(whereJSON)),
 		bytes.NewBuffer(body),
 	)
 	if err != nil {
@@ -296,7 +297,7 @@ func (h *KindHandler) doConditionalUpdateWithVersion(
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		http.Error(w, "Update fehlgeschlagen", http.StatusInternalServerError)
+		http.Error(w, "Update fehlgeschlagen", http.StatusBadGateway)
 		return
 	}
 	defer resp.Body.Close()
@@ -307,19 +308,21 @@ func (h *KindHandler) doConditionalUpdateWithVersion(
 		return
 	}
 
-	/*
-		if _, ok := out["updatedAt"]; !ok {
-			http.Error(
-				w,
-				"Konflikt: Datensatz wurde zwischenzeitlich geändert",
-				http.StatusConflict,
-			)
-			return
-		}
-	*/
+	// ✅ KEIN updatedAt = KEIN Update
+	if _, ok := out["updatedAt"]; !ok {
+		http.Error(
+			w,
+			"Konflikt: Datensatz wurde zwischenzeitlich geändert",
+			http.StatusConflict,
+		)
+		return
+	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Kind erfolgreich aktualisiert",
+	// ✅ echter Erfolg
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message":    "Kind erfolgreich aktualisiert",
+		"newVersion": expectedVersion + 1,
+		"updatedAt":  out["updatedAt"],
 	})
 }
