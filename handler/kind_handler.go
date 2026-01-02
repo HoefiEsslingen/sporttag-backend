@@ -42,12 +42,18 @@ func (h *KindHandler) RegisterKind(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	// CORS (optional, aber sauber)
+	// ---- CORS ----
 	w.Header().Set("Access-Control-Allow-Origin", "https://sporttag.b4a.app")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
-	// 1️⃣ Method Guard
+	// ✅ 1️⃣ OPTIONS IMMER ZUERST
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// ✅ 2️⃣ Danach Method Guard
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -75,11 +81,6 @@ func (h *KindHandler) RegisterKind(w http.ResponseWriter, r *http.Request) {
 		}()
 	default:
 		http.Error(w, "Kind wird bereits erfasst", http.StatusConflict)
-		return
-	}
-
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusOK)
 		return
 	}
 
