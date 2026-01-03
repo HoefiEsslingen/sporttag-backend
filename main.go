@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -21,7 +20,7 @@ type Config struct {
 
 func loadConfig() (Config, error) {
 	var config Config
-	b, err := ioutil.ReadFile("config.json")
+	b, err := os.ReadFile("config.json")
 	if err != nil {
 		return config, err
 	}
@@ -34,21 +33,22 @@ func main() {
 	if err != nil {
 		log.Fatalf("Config-Fehler: %v", err)
 	}
+
 	kindHandler := &handler.KindHandler{
 		Deadline:       config.Deadline,
 		ParseAppID:     config.ParseAppID,
 		ParseJSKey:     config.ParseJSKey,
 		ParseServerURL: config.ParseServerURL,
 	}
-	http.HandleFunc("/registerKind", kindHandler.RegisterKind)
-	http.HandleFunc("/kinder", kindHandler.GetKinder)
-	http.HandleFunc("/kind", kindHandler.UpdateKindByCriteria)
+
+	// 🔁 EINHEITLICHE RESSOURCE
+	http.HandleFunc("/kind", kindHandler.KindRouter)
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080" // für lokalen Test
+		port = "8080"
 	}
 
-	log.Println("Server läuft auf :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Println("Server läuft auf :" + port)
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
