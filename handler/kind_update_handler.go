@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"sporttag/strukturen"
 	"strconv"
 )
 
@@ -37,7 +38,7 @@ type KindUpdatePaid struct {
 
 // Root-Request
 type KindUpdateRequest struct {
-	Search          KindSearch      `json:"search"`
+	Search          strukturen.Kind `json:"search"`
 	Update          json.RawMessage `json:"update"`
 	ExpectedVersion int             `json:"expectedVersion"`
 }
@@ -47,14 +48,14 @@ type KindUpdateRequest struct {
 //
 
 func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Request) {
-
+	// ---- PANIC-RECOVER ----
 	defer func() {
 		if r := recover(); r != nil {
 			log.Println("PANIC:", r)
 			http.Error(w, "Interner Serverfehler", http.StatusInternalServerError)
 		}
 	}()
-
+	// ---- Erlaubte Update-Felder ----
 	allowedUpdateKeys := map[string]bool{
 		"vorName":    true,
 		"nachName":   true,
@@ -67,12 +68,13 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 	w.Header().Set("Access-Control-Allow-Origin", "https://sporttag.b4a.app")
 	w.Header().Set("Access-Control-Allow-Methods", "PUT, PATCH, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
+	//---- OPTIONS ----
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-
+	// ---- Method Check ----
+	// Erlaube nur PUT und PATCH
 	if r.Method != http.MethodPut && r.Method != http.MethodPatch {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -82,7 +84,7 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 	var req KindUpdateRequest
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
-
+	//---- Request parsen ----
 	if err := dec.Decode(&req); err != nil {
 		http.Error(w, "Ungültiges JSON: "+err.Error(), http.StatusBadRequest)
 		return
@@ -94,25 +96,16 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "Pflichtfeld in search fehlt", http.StatusBadRequest)
 		return
 	}
-
+	// ---- Validate ExpectedVersion ----
+	// Kennzeichen 'version' muss größer 0 sein
 	if req.ExpectedVersion <= 0 {
 		http.Error(w, "expectedVersion fehlt oder ungültig", http.StatusBadRequest)
 		return
 	}
 
-	// ---- GLOBALER LOCK PRO KIND ----
+	// ---- GLOBALER LOCK für KIND im Such-Request----
 	key := kindBusinessKey(req.Search)
-	//	mtx := h.mutexForKey(key)
 	lock := h.lockForKey(key)
-	/*
-		// try-lock (nicht blockierend!)
-		locked := make(chan struct{}, 1)
-
-		go func() {
-			mtx.Lock()
-			locked <- struct{}{}
-		}()
-	*/
 	select {
 	case lock <- struct{}{}:
 		// Lock erhalten
@@ -248,7 +241,7 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 // ===== Hilfsfunktionen =====
 //
 
-func (h *KindHandler) findKindBySearch(s KindSearch) ([]map[string]interface{}, error) {
+func (h *KindHandler) findKindBySearch(s strukturen.Kind) ([]map[string]interface{}, error) {
 	query := `{"vorName":"` + s.VorName +
 		`","nachName":"` + s.NachName +
 		`","jahrgang":` + strconv.Itoa(s.Jahrgang) +

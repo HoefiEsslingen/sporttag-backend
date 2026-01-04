@@ -18,6 +18,11 @@ type Config struct {
 	ParseServerURL string    `json:"parse_server_url"`
 }
 
+// Lädt Konfigurationsdaten insbesondere das Ende-Datum der Registrierung
+// ab dem Ende-Datum haben beliebige Anwender keinen Zugriff mehr.
+//
+// lediglich der Superuser (Passwort in Umgebungsvariable SPORTTAG_SUPERUSER_PASS)
+// kann weiterhin Änderungen vornehmen.
 func loadConfig() (Config, error) {
 	var config Config
 	b, err := os.ReadFile("config.json")
@@ -29,11 +34,13 @@ func loadConfig() (Config, error) {
 }
 
 func main() {
+	// ---- Konfiguration laden ----
 	config, err := loadConfig()
 	if err != nil {
 		log.Fatalf("Config-Fehler: %v", err)
 	}
 
+	// ---- Handler initialisieren ----
 	kindHandler := &handler.KindHandler{
 		Deadline:       config.Deadline,
 		ParseAppID:     config.ParseAppID,
@@ -44,11 +51,13 @@ func main() {
 	// 🔁 EINHEITLICHE RESSOURCE
 	http.HandleFunc("/kind", kindHandler.KindRouter)
 
+	// ---- Server starten ----
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
+	// ---- Server starten ----
 	log.Println("Server läuft auf :" + port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
