@@ -1,0 +1,160 @@
+Test 1:
+curl -i https://sporttag-backend.onrender.com/kind
+
+Erwartetes Ergebnis:
+
+HTTP/2 200 
+date: Sat, 03 Jan 2026 21:10:23 GMT
+content-type: application/json
+cf-ray: 9b857b6919b5dc8c-FRA
+access-control-allow-headers: Content-Type
+access-control-allow-methods: GET, POST, PUT, PATCH, OPTIONS
+access-control-allow-origin: https://sporttag.b4a.app
+rndr-id: 4a44f7e3-a604-472a
+vary: Accept-Encoding
+x-render-origin-server: Render
+cf-cache-status: DYNAMIC
+server: cloudflare
+alt-svc: h3=":443"; ma=86400
+
+{"results":[{"objectId":"9F4TfNttIB","nachName":"Höferlin","vorName":"Gerold","bezahlt":false,"jahrgang":2015,"geschlecht":"m","createdAt":"2025-12-31T13:34:18.966Z","updatedAt":"2026-01-01T19:45:57.952Z","version":1},{"objectId":"mns9QNz2jM","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Werner","createdAt":"2025-12-31T13:34:55.691Z","updatedAt":"2026-01-01T19:45:56.155Z","version":1},{"objectId":"NBs70Wxcpw","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Max","createdAt":"2025-12-31T13:35:40.018Z","updatedAt":"2026-01-02T21:17:33.828Z","version":1},{"objectId":"MuZaeTqT3H","bezahlt":false,"geschlecht":"w","jahrgang":2017,"nachName":"Mustermann","vorName":"Selina","createdAt":"2025-12-31T13:36:12.051Z","updatedAt":"2026-01-01T19:45:59.987Z","version":1},{"objectId":"pZo28vfops","bezahlt":false,"geschlecht":"w","jahrgang":2016,"nachName":"Herrmann","vorName":"Selina","createdAt":"2025-12-31T17:34:27.338Z","updatedAt":"2026-01-01T19:45:51.859Z","version":1},{"objectId":"o1uDsnYO5H","bezahlt":false,"geschlecht":"m","jahrgang":2018,"nachName":"Mustermann","vorName":"Gerd","createdAt":"2026-01-01T14:42:48.816Z","updatedAt":"2026-01-01T19:46:03.701Z","version":1},{"objectId":"8r4QNgKher","bezahlt":false,"geschlecht":"m","jahrgang":2011,"nachName":"Mustermann","vorName":"Karl","version":1,"createdAt":"2026-01-03T19:46:52.233Z","updatedAt":"2026-01-03T19:46:52.233Z"},{"objectId":"d14OmbotoM","bezahlt":false,"geschlecht":"m","jahrgang":2013,"nachName":"Test","vorName":"Tim","version":1,"createdAt":"2026-01-03T20:23:35.577Z","updatedAt":"2026-01-03T20:23:35.577Z"}]}%              
+
+Test 2:
+curl -i \
+  -H "Accept: application/json" \
+  https://sporttag-backend.onrender.com/kind
+
+Erwartetes Ergebnis:
+HTTP/2 200 
+date: Sat, 03 Jan 2026 21:11:12 GMT
+content-type: application/json
+cf-ray: 9b857cbfbf14db0b-FRA
+access-control-allow-headers: Content-Type
+access-control-allow-methods: GET, POST, PUT, PATCH, OPTIONS
+access-control-allow-origin: https://sporttag.b4a.app
+rndr-id: 2003f4b5-56e5-4867
+vary: Accept-Encoding
+x-render-origin-server: Render
+cf-cache-status: DYNAMIC
+server: cloudflare
+alt-svc: h3=":443"; ma=86400
+
+{"results":[{"objectId":"9F4TfNttIB","nachName":"Höferlin","vorName":"Gerold","bezahlt":false,"jahrgang":2015,"geschlecht":"m","createdAt":"2025-12-31T13:34:18.966Z","updatedAt":"2026-01-01T19:45:57.952Z","version":1},{"objectId":"mns9QNz2jM","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Werner","createdAt":"2025-12-31T13:34:55.691Z","updatedAt":"2026-01-01T19:45:56.155Z","version":1},{"objectId":"NBs70Wxcpw","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Max","createdAt":"2025-12-31T13:35:40.018Z","updatedAt":"2026-01-02T21:17:33.828Z","version":1},{"objectId":"MuZaeTqT3H","bezahlt":false,"geschlecht":"w","jahrgang":2017,"nachName":"Mustermann","vorName":"Selina","createdAt":"2025-12-31T13:36:12.051Z","updatedAt":"2026-01-01T19:45:59.987Z","version":1},{"objectId":"pZo28vfops","bezahlt":false,"geschlecht":"w","jahrgang":2016,"nachName":"Herrmann","vorName":"Selina","createdAt":"2025-12-31T17:34:27.338Z","updatedAt":"2026-01-01T19:45:51.859Z","version":1},{"objectId":"o1uDsnYO5H","bezahlt":false,"geschlecht":"m","jahrgang":2018,"nachName":"Mustermann","vorName":"Gerd","createdAt":"2026-01-01T14:42:48.816Z","updatedAt":"2026-01-01T19:46:03.701Z","version":1},{"objectId":"8r4QNgKher","bezahlt":false,"geschlecht":"m","jahrgang":2011,"nachName":"Mustermann","vorName":"Karl","version":1,"createdAt":"2026-01-03T19:46:52.233Z","updatedAt":"2026-01-03T19:46:52.233Z"},{"objectId":"d14OmbotoM","bezahlt":false,"geschlecht":"m","jahrgang":2013,"nachName":"Test","vorName":"Tim","version":1,"createdAt":"2026-01-03T20:23:35.577Z","updatedAt":"2026-01-03T20:23:35.577Z"}]}%              
+
+Test 3:
+curl -i -X OPTIONS https://sporttag-backend.onrender.com/kind
+
+Erwartetes Ergebnis:
+HTTP/2 204 
+date: Sat, 03 Jan 2026 21:11:36 GMT
+cf-ray: 9b857d51fa4aae0b-FRA
+access-control-allow-headers: Content-Type
+access-control-allow-methods: GET, POST, PUT, PATCH, OPTIONS
+access-control-allow-origin: https://sporttag.b4a.app
+rndr-id: 732f6bc4-c6e0-4280
+x-render-origin-server: Render
+cf-cache-status: DYNAMIC
+server: cloudflare
+alt-svc: h3=":443"; ma=86400
+
+Test 4:
+curl -i -X POST https://sporttag-backend.onrender.com/kind
+
+Erwartetes Ergebnis:
+HTTP/2 400 
+date: Sat, 03 Jan 2026 21:12:40 GMT
+content-type: text/plain; charset=utf-8
+cf-ray: 9b857ee79c500857-FRA
+access-control-allow-headers: Content-Type
+access-control-allow-methods: GET, POST, PUT, PATCH, OPTIONS
+access-control-allow-origin: https://sporttag.b4a.app
+rndr-id: 486a7329-e9bc-46ae
+vary: Accept-Encoding
+x-content-type-options: nosniff
+x-render-origin-server: Render
+cf-cache-status: DYNAMIC
+server: cloudflare
+alt-svc: h3=":443"; ma=86400
+
+Ungültige JSON-Daten
+
+Test 5:
+curl -i -X DELETE https://sporttag-backend.onrender.com/kind
+
+Erwartetes Ergebnis:
+HTTP/2 405 
+date: Sat, 03 Jan 2026 21:13:22 GMT
+content-type: text/plain; charset=utf-8
+cf-ray: 9b857feaff151cc3-FRA
+access-control-allow-headers: Content-Type
+access-control-allow-methods: GET, POST, PUT, PATCH, OPTIONS
+access-control-allow-origin: https://sporttag.b4a.app
+rndr-id: 6157e74e-b7f7-497a
+vary: Accept-Encoding
+x-content-type-options: nosniff
+x-render-origin-server: Render
+cf-cache-status: DYNAMIC
+server: cloudflare
+alt-svc: h3=":443"; ma=86400
+
+Method not allowed
+
+Test 6:
+for i in {1..10}; do
+  curl -s https://sporttag-backend.onrender.com/kind &
+done
+wait
+
+Erwartetes Ergebnis:
+[2] 93696
+[3] 93697
+[4] 93698
+[5] 93699
+[6] 93700
+[7] 93701
+[8] 93702
+[9] 93703
+[10] 93704
+[11] 93705
+{"results":[{"objectId":"9F4TfNttIB","nachName":"Höferlin","vorName":"Gerold","bezahlt":false,"jahrgang":2015,"geschlecht":"m","createdAt":"2025-12-31T13:34:18.966Z","updatedAt":"2026-01-01T19:45:57.952Z","version":1},{"objectId":"mns9QNz2jM","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Werner","createdAt":"2025-12-31T13:34:55.691Z","updatedAt":"2026-01-01T19:45:56.155Z","version":1},{"objectId":"NBs70Wxcpw","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Max","createdAt":"2025-12-31T13:35:40.018Z","updatedAt":"2026-01-02T21:17:33.828Z","version":1},{"objectId":"MuZaeTqT3H","bezahlt":false,"geschlecht":"w","jahrgang":2017,"nachName":"Mustermann","vorName":"Selina","createdAt":"2025-12-31T13:36:12.051Z","updatedAt":"2026-01-01T19:45:59.987Z","version":1},{"objectId":"pZo28vfops","bezahlt":false,"geschlecht":"w","jahrgang":2016,"nachName":"Herrmann","vorName":"Selina","createdAt":"2025-12-31T17:34:27.338Z","updatedAt":"2026-01-01T19:45:51.859Z","version":1},{"objectId":"o1uDsnYO5H","bezahlt":false,"geschlecht":"m","jahrgang":2018,"nachName":"Mustermann","vorName":"Gerd","createdAt":"2026-01-01T14:42:48.816Z","updatedAt":"2026-01-01T19:46:03.701Z","version":1},{"objectId":"8r4QNgKher","bezahlt":false,"geschlecht":"m","jahrgang":2011,"nachName":"Mustermann","vorName":"Karl","version":1,"createdAt":"2026-01-03T19:46:52.233Z","updatedAt":"2026-01-03T19:46:52.233Z"},{"objectId":"d14OmbotoM","bezahlt":false,"geschlecht":"m","jahrgang":2013,"nachName":"Test","vorName":"Tim","version":1,"createdAt":"2026-01-03T20:23:35.577Z","updatedAt":"2026-01-03T20:23:35.577Z"}]}[8]    done       curl -s https://sporttag-backend.onrender.com/kind
+{"results":[{"objectId":"9F4TfNttIB","nachName":"Höferlin","vorName":"Gerold","bezahlt":false,"jahrgang":2015,"geschlecht":"m","createdAt":"2025-12-31T13:34:18.966Z","updatedAt":"2026-01-01T19:45:57.952Z","version":1},{"objectId":"mns9QNz2jM","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Werner","createdAt":"2025-12-31T13:34:55.691Z","updatedAt":"2026-01-01T19:45:56.155Z","version":1},{"objectId":"NBs70Wxcpw","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Max","createdAt":"2025-12-31T13:35:40.018Z","updatedAt":"2026-01-02T21:17:33.828Z","version":1},{"objectId":"MuZaeTqT3H","bezahlt":false,"geschlecht":"w","jahrgang":2017,"nachName":"Mustermann","vorName":"Selina","createdAt":"2025-12-31T13:36:12.051Z","updatedAt":"2026-01-01T19:45:59.987Z","version":1},{"objectId":"pZo28vfops","bezahlt":false,"geschlecht":"w","jahrgang":2016,"nachName":"Herrmann","vorName":"Selina","createdAt":"2025-12-31T17:34:27.338Z","updatedAt":"2026-01-01T19:45:51.859Z","version":1},{"objectId":"o1uDsnYO5H","bezahlt":false,"geschlecht":"m","jahrgang":2018,"nachName":"Mustermann","vorName":"Gerd","createdAt":"2026-01-01T14:42:48.816Z","updatedAt":"2026-01-01T19:46:03.701Z","version":1},{"objectId":"8r4QNgKher","bezahlt":false,"geschlecht":"m","jahrgang":2011,"nachName":"Mustermann","vorName":"Karl","version":1,"createdAt":"2026-01-03T19:46:52.233Z","updatedAt":"2026-01-03T19:46:52.233Z"},{"objectId":"d14OmbotoM","bezahlt":false,"geschlecht":"m","jahrgang":2013,"nachName":"Test","vorName":"Tim","version":1,"createdAt":"2026-01-03T20:23:35.577Z","updatedAt":"2026-01-03T20:23:35.577Z"}]}[6]    done       curl -s https://sporttag-backend.onrender.com/kind
+{"results":[{"objectId":"9F4TfNttIB","nachName":"Höferlin","vorName":"Gerold","bezahlt":false,"jahrgang":2015,"geschlecht":"m","createdAt":"2025-12-31T13:34:18.966Z","updatedAt":"2026-01-01T19:45:57.952Z","version":1},{"objectId":"mns9QNz2jM","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Werner","createdAt":"2025-12-31T13:34:55.691Z","updatedAt":"2026-01-01T19:45:56.155Z","version":1},{"objectId":"NBs70Wxcpw","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Max","createdAt":"2025-12-31T13:35:40.018Z","updatedAt":"2026-01-02T21:17:33.828Z","version":1},{"objectId":"MuZaeTqT3H","bezahlt":false,"geschlecht":"w","jahrgang":2017,"nachName":"Mustermann","vorName":"Selina","createdAt":"2025-12-31T13:36:12.051Z","updatedAt":"2026-01-01T19:45:59.987Z","version":1},{"objectId":"pZo28vfops","bezahlt":false,"geschlecht":"w","jahrgang":2016,"nachName":"Herrmann","vorName":"Selina","createdAt":"2025-12-31T17:34:27.338Z","updatedAt":"2026-01-01T19:45:51.859Z","version":1},{"objectId":"o1uDsnYO5H","bezahlt":false,"geschlecht":"m","jahrgang":2018,"nachName":"Mustermann","vorName":"Gerd","createdAt":"2026-01-01T14:42:48.816Z","updatedAt":"2026-01-01T19:46:03.701Z","version":1},{"objectId":"8r4QNgKher","bezahlt":false,"geschlecht":"m","jahrgang":2011,"nachName":"Mustermann","vorName":"Karl","version":1,"createdAt":"2026-01-03T19:46:52.233Z","updatedAt":"2026-01-03T19:46:52.233Z"},{"objectId":"d14OmbotoM","bezahlt":false,"geschlecht":"m","jahrgang":2013,"nachName":"Test","vorName":"Tim","version":1,"createdAt":"2026-01-03T20:23:35.577Z","updatedAt":"2026-01-03T20:23:35.577Z"}]}[2]    done       curl -s https://sporttag-backend.onrender.com/kind
+{"results":[{"objectId":"9F4TfNttIB","nachName":"Höferlin","vorName":"Gerold","bezahlt":false,"jahrgang":2015,"geschlecht":"m","createdAt":"2025-12-31T13:34:18.966Z","updatedAt":"2026-01-01T19:45:57.952Z","version":1},{"objectId":"mns9QNz2jM","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Werner","createdAt":"2025-12-31T13:34:55.691Z","updatedAt":"2026-01-01T19:45:56.155Z","version":1},{"objectId":"NBs70Wxcpw","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Max","createdAt":"2025-12-31T13:35:40.018Z","updatedAt":"2026-01-02T21:17:33.828Z","version":1},{"objectId":"MuZaeTqT3H","bezahlt":false,"geschlecht":"w","jahrgang":2017,"nachName":"Mustermann","vorName":"Selina","createdAt":"2025-12-31T13:36:12.051Z","updatedAt":"2026-01-01T19:45:59.987Z","version":1},{"objectId":"pZo28vfops","bezahlt":false,"geschlecht":"w","jahrgang":2016,"nachName":"Herrmann","vorName":"Selina","createdAt":"2025-12-31T17:34:27.338Z","updatedAt":"2026-01-01T19:45:51.859Z","version":1},{"objectId":"o1uDsnYO5H","bezahlt":false,"geschlecht":"m","jahrgang":2018,"nachName":"Mustermann","vorName":"Gerd","createdAt":"2026-01-01T14:42:48.816Z","updatedAt":"2026-01-01T19:46:03.701Z","version":1},{"objectId":"8r4QNgKher","bezahlt":false,"geschlecht":"m","jahrgang":2011,"nachName":"Mustermann","vorName":"Karl","version":1,"createdAt":"2026-01-03T19:46:52.233Z","updatedAt":"2026-01-03T19:46:52.233Z"},{"objectId":"d14OmbotoM","bezahlt":false,"geschlecht":"m","jahrgang":2013,"nachName":"Test","vorName":"Tim","version":1,"createdAt":"2026-01-03T20:23:35.577Z","updatedAt":"2026-01-03T20:23:35.577Z"}]}[4]    done       curl -s https://sporttag-backend.onrender.com/kind
+{"results":[{"objectId":"9F4TfNttIB","nachName":"Höferlin","vorName":"Gerold","bezahlt":false,"jahrgang":2015,"geschlecht":"m","createdAt":"2025-12-31T13:34:18.966Z","updatedAt":"2026-01-01T19:45:57.952Z","version":1},{"objectId":"mns9QNz2jM","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Werner","createdAt":"2025-12-31T13:34:55.691Z","updatedAt":"2026-01-01T19:45:56.155Z","version":1},{"objectId":"NBs70Wxcpw","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Max","createdAt":"2025-12-31T13:35:40.018Z","updatedAt":"2026-01-02T21:17:33.828Z","version":1},{"objectId":"MuZaeTqT3H","bezahlt":false,"geschlecht":"w","jahrgang":2017,"nachName":"Mustermann","vorName":"Selina","createdAt":"2025-12-31T13:36:12.051Z","updatedAt":"2026-01-01T19:45:59.987Z","version":1},{"objectId":"pZo28vfops","bezahlt":false,"geschlecht":"w","jahrgang":2016,"nachName":"Herrmann","vorName":"Selina","createdAt":"2025-12-31T17:34:27.338Z","updatedAt":"2026-01-01T19:45:51.859Z","version":1},{"objectId":"o1uDsnYO5H","bezahlt":false,"geschlecht":"m","jahrgang":2018,"nachName":"Mustermann","vorName":"Gerd","createdAt":"2026-01-01T14:42:48.816Z","updatedAt":"2026-01-01T19:46:03.701Z","version":1},{"objectId":"8r4QNgKher","bezahlt":false,"geschlecht":"m","jahrgang":2011,"nachName":"Mustermann","vorName":"Karl","version":1,"createdAt":"2026-01-03T19:46:52.233Z","updatedAt":"2026-01-03T19:46:52.233Z"},{"objectId":"d14OmbotoM","bezahlt":false,"geschlecht":"m","jahrgang":2013,"nachName":"Test","vorName":"Tim","version":1,"createdAt":"2026-01-03T20:23:35.577Z","updatedAt":"2026-01-03T20:23:35.577Z"}]}[9]    done       curl -s https://sporttag-backend.onrender.com/kind
+{"results":[{"objectId":"9F4TfNttIB","nachName":"Höferlin","vorName":"Gerold","bezahlt":false,"jahrgang":2015,"geschlecht":"m","createdAt":"2025-12-31T13:34:18.966Z","updatedAt":"2026-01-01T19:45:57.952Z","version":1},{"objectId":"mns9QNz2jM","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Werner","createdAt":"2025-12-31T13:34:55.691Z","updatedAt":"2026-01-01T19:45:56.155Z","version":1},{"objectId":"NBs70Wxcpw","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Max","createdAt":"2025-12-31T13:35:40.018Z","updatedAt":"2026-01-02T21:17:33.828Z","version":1},{"objectId":"MuZaeTqT3H","bezahlt":false,"geschlecht":"w","jahrgang":2017,"nachName":"Mustermann","vorName":"Selina","createdAt":"2025-12-31T13:36:12.051Z","updatedAt":"2026-01-01T19:45:59.987Z","version":1},{"objectId":"pZo28vfops","bezahlt":false,"geschlecht":"w","jahrgang":2016,"nachName":"Herrmann","vorName":"Selina","createdAt":"2025-12-31T17:34:27.338Z","updatedAt":"2026-01-01T19:45:51.859Z","version":1},{"objectId":"o1uDsnYO5H","bezahlt":false,"geschlecht":"m","jahrgang":2018,"nachName":"Mustermann","vorName":"Gerd","createdAt":"2026-01-01T14:42:48.816Z","updatedAt":"2026-01-01T19:46:03.701Z","version":1},{"objectId":"8r4QNgKher","bezahlt":false,"geschlecht":"m","jahrgang":2011,"nachName":"Mustermann","vorName":"Karl","version":1,"createdAt":"2026-01-03T19:46:52.233Z","updatedAt":"2026-01-03T19:46:52.233Z"},{"objectId":"d14OmbotoM","bezahlt":false,"geschlecht":"m","jahrgang":2013,"nachName":"Test","vorName":"Tim","version":1,"createdAt":"2026-01-03T20:23:35.577Z","updatedAt":"2026-01-03T20:23:35.577Z"}]}[7]    done       curl -s https://sporttag-backend.onrender.com/kind
+{"results":[{"objectId":"9F4TfNttIB","nachName":"Höferlin","vorName":"Gerold","bezahlt":false,"jahrgang":2015,"geschlecht":"m","createdAt":"2025-12-31T13:34:18.966Z","updatedAt":"2026-01-01T19:45:57.952Z","version":1},{"objectId":"mns9QNz2jM","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Werner","createdAt":"2025-12-31T13:34:55.691Z","updatedAt":"2026-01-01T19:45:56.155Z","version":1},{"objectId":"NBs70Wxcpw","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Max","createdAt":"2025-12-31T13:35:40.018Z","updatedAt":"2026-01-02T21:17:33.828Z","version":1},{"objectId":"MuZaeTqT3H","bezahlt":false,"geschlecht":"w","jahrgang":2017,"nachName":"Mustermann","vorName":"Selina","createdAt":"2025-12-31T13:36:12.051Z","updatedAt":"2026-01-01T19:45:59.987Z","version":1},{"objectId":"pZo28vfops","bezahlt":false,"geschlecht":"w","jahrgang":2016,"nachName":"Herrmann","vorName":"Selina","createdAt":"2025-12-31T17:34:27.338Z","updatedAt":"2026-01-01T19:45:51.859Z","version":1},{"objectId":"o1uDsnYO5H","bezahlt":false,"geschlecht":"m","jahrgang":2018,"nachName":"Mustermann","vorName":"Gerd","createdAt":"2026-01-01T14:42:48.816Z","updatedAt":"2026-01-01T19:46:03.701Z","version":1},{"objectId":"8r4QNgKher","bezahlt":false,"geschlecht":"m","jahrgang":2011,"nachName":"Mustermann","vorName":"Karl","version":1,"createdAt":"2026-01-03T19:46:52.233Z","updatedAt":"2026-01-03T19:46:52.233Z"},{"objectId":"d14OmbotoM","bezahlt":false,"geschlecht":"m","jahrgang":2013,"nachName":"Test","vorName":"Tim","version":1,"createdAt":"2026-01-03T20:23:35.577Z","updatedAt":"2026-01-03T20:23:35.577Z"}]}[5]    done       curl -s https://sporttag-backend.onrender.com/kind
+{"results":[{"objectId":"9F4TfNttIB","nachName":"Höferlin","vorName":"Gerold","bezahlt":false,"jahrgang":2015,"geschlecht":"m","createdAt":"2025-12-31T13:34:18.966Z","updatedAt":"2026-01-01T19:45:57.952Z","version":1},{"objectId":"mns9QNz2jM","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Werner","createdAt":"2025-12-31T13:34:55.691Z","updatedAt":"2026-01-01T19:45:56.155Z","version":1},{"objectId":"NBs70Wxcpw","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Max","createdAt":"2025-12-31T13:35:40.018Z","updatedAt":"2026-01-02T21:17:33.828Z","version":1},{"objectId":"MuZaeTqT3H","bezahlt":false,"geschlecht":"w","jahrgang":2017,"nachName":"Mustermann","vorName":"Selina","createdAt":"2025-12-31T13:36:12.051Z","updatedAt":"2026-01-01T19:45:59.987Z","version":1},{"objectId":"pZo28vfops","bezahlt":false,"geschlecht":"w","jahrgang":2016,"nachName":"Herrmann","vorName":"Selina","createdAt":"2025-12-31T17:34:27.338Z","updatedAt":"2026-01-01T19:45:51.859Z","version":1},{"objectId":"o1uDsnYO5H","bezahlt":false,"geschlecht":"m","jahrgang":2018,"nachName":"Mustermann","vorName":"Gerd","createdAt":"2026-01-01T14:42:48.816Z","updatedAt":"2026-01-01T19:46:03.701Z","version":1},{"objectId":"8r4QNgKher","bezahlt":false,"geschlecht":"m","jahrgang":2011,"nachName":"Mustermann","vorName":"Karl","version":1,"createdAt":"2026-01-03T19:46:52.233Z","updatedAt":"2026-01-03T19:46:52.233Z"},{"objectId":"d14OmbotoM","bezahlt":false,"geschlecht":"m","jahrgang":2013,"nachName":"Test","vorName":"Tim","version":1,"createdAt":"2026-01-03T20:23:35.577Z","updatedAt":"2026-01-03T20:23:35.577Z"}]}[3]    done       curl -s https://sporttag-backend.onrender.com/kind
+{"results":[{"objectId":"9F4TfNttIB","nachName":"Höferlin","vorName":"Gerold","bezahlt":false,"jahrgang":2015,"geschlecht":"m","createdAt":"2025-12-31T13:34:18.966Z","updatedAt":"2026-01-01T19:45:57.952Z","version":1},{"objectId":"mns9QNz2jM","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Werner","createdAt":"2025-12-31T13:34:55.691Z","updatedAt":"2026-01-01T19:45:56.155Z","version":1},{"objectId":"NBs70Wxcpw","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Max","createdAt":"2025-12-31T13:35:40.018Z","updatedAt":"2026-01-02T21:17:33.828Z","version":1},{"objectId":"MuZaeTqT3H","bezahlt":false,"geschlecht":"w","jahrgang":2017,"nachName":"Mustermann","vorName":"Selina","createdAt":"2025-12-31T13:36:12.051Z","updatedAt":"2026-01-01T19:45:59.987Z","version":1},{"objectId":"pZo28vfops","bezahlt":false,"geschlecht":"w","jahrgang":2016,"nachName":"Herrmann","vorName":"Selina","createdAt":"2025-12-31T17:34:27.338Z","updatedAt":"2026-01-01T19:45:51.859Z","version":1},{"objectId":"o1uDsnYO5H","bezahlt":false,"geschlecht":"m","jahrgang":2018,"nachName":"Mustermann","vorName":"Gerd","createdAt":"2026-01-01T14:42:48.816Z","updatedAt":"2026-01-01T19:46:03.701Z","version":1},{"objectId":"8r4QNgKher","bezahlt":false,"geschlecht":"m","jahrgang":2011,"nachName":"Mustermann","vorName":"Karl","version":1,"createdAt":"2026-01-03T19:46:52.233Z","updatedAt":"2026-01-03T19:46:52.233Z"},{"objectId":"d14OmbotoM","bezahlt":false,"geschlecht":"m","jahrgang":2013,"nachName":"Test","vorName":"Tim","version":1,"createdAt":"2026-01-03T20:23:35.577Z","updatedAt":"2026-01-03T20:23:35.577Z"}]}[10]  - done       curl -s https://sporttag-backend.onrender.com/kind
+{"results":[{"objectId":"9F4TfNttIB","nachName":"Höferlin","vorName":"Gerold","bezahlt":false,"jahrgang":2015,"geschlecht":"m","createdAt":"2025-12-31T13:34:18.966Z","updatedAt":"2026-01-01T19:45:57.952Z","version":1},{"objectId":"mns9QNz2jM","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Werner","createdAt":"2025-12-31T13:34:55.691Z","updatedAt":"2026-01-01T19:45:56.155Z","version":1},{"objectId":"NBs70Wxcpw","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Max","createdAt":"2025-12-31T13:35:40.018Z","updatedAt":"2026-01-02T21:17:33.828Z","version":1},{"objectId":"MuZaeTqT3H","bezahlt":false,"geschlecht":"w","jahrgang":2017,"nachName":"Mustermann","vorName":"Selina","createdAt":"2025-12-31T13:36:12.051Z","updatedAt":"2026-01-01T19:45:59.987Z","version":1},{"objectId":"pZo28vfops","bezahlt":false,"geschlecht":"w","jahrgang":2016,"nachName":"Herrmann","vorName":"Selina","createdAt":"2025-12-31T17:34:27.338Z","updatedAt":"2026-01-01T19:45:51.859Z","version":1},{"objectId":"o1uDsnYO5H","bezahlt":false,"geschlecht":"m","jahrgang":2018,"nachName":"Mustermann","vorName":"Gerd","createdAt":"2026-01-01T14:42:48.816Z","updatedAt":"2026-01-01T19:46:03.701Z","version":1},{"objectId":"8r4QNgKher","bezahlt":false,"geschlecht":"m","jahrgang":2011,"nachName":"Mustermann","vorName":"Karl","version":1,"createdAt":"2026-01-03T19:46:52.233Z","updatedAt":"2026-01-03T19:46:52.233Z"},{"objectId":"d14OmbotoM","bezahlt":false,"geschlecht":"m","jahrgang":2013,"nachName":"Test","vorName":"Tim","version":1,"createdAt":"2026-01-03T20:23:35.577Z","updatedAt":"2026-01-03T20:23:35.577Z"}]}[11]  + done       curl -s https://sporttag-backend.onrender.com/kind
+
+Test 7:
+curl -s -X POST https://sporttag-backend.onrender.com/kind \
+  -H "Content-Type: application/json" \
+  -d '{
+    "vorName": "Timmi",
+    "nachName": "Test2",
+    "jahrgang": 2010,
+    "geschlecht": "m"
+  }' &
+
+curl -i https://sporttag-backend.onrender.com/kind
+
+Erwartetes Ergebnis:
+[1] 94643
+HTTP/2 200 
+date: Sat, 03 Jan 2026 21:15:03 GMT
+content-type: application/json
+cf-ray: 9b858262abf1d396-FRA
+access-control-allow-headers: Content-Type
+access-control-allow-methods: GET, POST, PUT, PATCH, OPTIONS
+access-control-allow-origin: https://sporttag.b4a.app
+rndr-id: ab7fb254-1829-4c13
+vary: Accept-Encoding
+x-render-origin-server: Render
+cf-cache-status: DYNAMIC
+server: cloudflare
+alt-svc: h3=":443"; ma=86400
+
+{"results":[{"objectId":"9F4TfNttIB","nachName":"Höferlin","vorName":"Gerold","bezahlt":false,"jahrgang":2015,"geschlecht":"m","createdAt":"2025-12-31T13:34:18.966Z","updatedAt":"2026-01-01T19:45:57.952Z","version":1},{"objectId":"mns9QNz2jM","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Werner","createdAt":"2025-12-31T13:34:55.691Z","updatedAt":"2026-01-01T19:45:56.155Z","version":1},{"objectId":"NBs70Wxcpw","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Max","createdAt":"2025-12-31T13:35:40.018Z","updatedAt":"2026-01-02T21:17:33.828Z","version":1},{"objectId":"MuZaeTqT3H","bezahlt":false,"geschlecht":"w","jahrgang":2017,"nachName":"Mustermann","vorName":"Selina","createdAt":"2025-12-31T13:36:12.051Z","updatedAt":"2026-01-01T19:45:59.987Z","version":1},{"objectId":"pZo28vfops","bezahlt":false,"geschlecht":"w","jahrgang":2016,"nachName":"Herrmann","vorName":"Selina","createdAt":"2025-12-31T17:34:27.338Z","updatedAt":"2026-01-01T19:45:51.859Z","version":1},{"objectId":"o1uDsnYO5H","bezahlt":false,"geschlecht":"m","jahrgang":2018,"nachName":"Mustermann","vorName":"Gerd","createdAt":"2026-01-01T14:42:48.816Z","updatedAt":"2026-01-01T19:46:03.701Z","version":1},{"objectId":"8r4QNgKher","bezahlt":false,"geschlecht":"m","jahrgang":2011,"nachName":"Mustermann","vorName":"Karl","version":1,"createdAt":"2026-01-03T19:46:52.233Z","updatedAt":"2026-01-03T19:46:52.233Z"},{"objectId":"d14OmbotoM","bezahlt":false,"geschlecht":"m","jahrgang":2013,"nachName":"Test","vorName":"Tim","version":1,"createdAt":"2026-01-03T20:23:35.577Z","updatedAt":"2026-01-03T20:23:35.577Z"}]}%              Kind existiert bereits                                                                                                                   
+[1]  + done       curl -s -X POST https://sporttag-backend.onrender.com/kind -H  -d"
+Nimm Stellung dazu.

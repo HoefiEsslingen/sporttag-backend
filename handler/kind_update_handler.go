@@ -206,7 +206,7 @@ func (h *KindHandler) UpdateKindByCriteria(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "Ungültiges PUT-Update", http.StatusBadRequest)
 		return
 	}
-
+	// alle Attribute, außer 'bezahlt' müssen angegeben sein
 	if upd.VorName == "" || upd.NachName == "" || upd.Geschlecht == "" || upd.Jahrgang == 0 {
 		http.Error(w, "Pflichtfeld im Update fehlt", http.StatusBadRequest)
 		return
