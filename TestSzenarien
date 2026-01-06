@@ -158,3 +158,55 @@ alt-svc: h3=":443"; ma=86400
 {"results":[{"objectId":"9F4TfNttIB","nachName":"Höferlin","vorName":"Gerold","bezahlt":false,"jahrgang":2015,"geschlecht":"m","createdAt":"2025-12-31T13:34:18.966Z","updatedAt":"2026-01-01T19:45:57.952Z","version":1},{"objectId":"mns9QNz2jM","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Werner","createdAt":"2025-12-31T13:34:55.691Z","updatedAt":"2026-01-01T19:45:56.155Z","version":1},{"objectId":"NBs70Wxcpw","bezahlt":false,"geschlecht":"m","jahrgang":2014,"nachName":"Mustermann","vorName":"Max","createdAt":"2025-12-31T13:35:40.018Z","updatedAt":"2026-01-02T21:17:33.828Z","version":1},{"objectId":"MuZaeTqT3H","bezahlt":false,"geschlecht":"w","jahrgang":2017,"nachName":"Mustermann","vorName":"Selina","createdAt":"2025-12-31T13:36:12.051Z","updatedAt":"2026-01-01T19:45:59.987Z","version":1},{"objectId":"pZo28vfops","bezahlt":false,"geschlecht":"w","jahrgang":2016,"nachName":"Herrmann","vorName":"Selina","createdAt":"2025-12-31T17:34:27.338Z","updatedAt":"2026-01-01T19:45:51.859Z","version":1},{"objectId":"o1uDsnYO5H","bezahlt":false,"geschlecht":"m","jahrgang":2018,"nachName":"Mustermann","vorName":"Gerd","createdAt":"2026-01-01T14:42:48.816Z","updatedAt":"2026-01-01T19:46:03.701Z","version":1},{"objectId":"8r4QNgKher","bezahlt":false,"geschlecht":"m","jahrgang":2011,"nachName":"Mustermann","vorName":"Karl","version":1,"createdAt":"2026-01-03T19:46:52.233Z","updatedAt":"2026-01-03T19:46:52.233Z"},{"objectId":"d14OmbotoM","bezahlt":false,"geschlecht":"m","jahrgang":2013,"nachName":"Test","vorName":"Tim","version":1,"createdAt":"2026-01-03T20:23:35.577Z","updatedAt":"2026-01-03T20:23:35.577Z"}]}%              Kind existiert bereits                                                                                                                   
 [1]  + done       curl -s -X POST https://sporttag-backend.onrender.com/kind -H  -d"
 Nimm Stellung dazu.
+
+TEst 8 --> bezahlt auf true bei definiertem Kind (einzelne Angaben, außer 'bezahlt' nicht separat änderbar)
+  curl -s -X PATCH https://sporttag-backend.onrender.com/kind \
+    -H "Content-Type: application/json" \
+    -d '{
+      "search": {
+        "vorName": "Max",
+        "nachName": "Mustermann",
+        "jahrgang": 2014,
+        "geschlecht": "m"
+      },
+      "expectedVersion": 1,
+      "update": {
+        "bezahlt": true
+      }
+    }'
+
+Test 9: --> andere Attribute, außer bezahlt, als ganzes ändern
+ curl -s -X PUT https://sporttag-backend.onrender.com/kind \
+    -H "Content-Type: application/json" \
+    -d '{
+      "search": {
+        "vorName": "Max",
+        "nachName": "Mustermann",
+        "jahrgang": 2014,
+        "geschlecht": "m"
+      },
+      "expectedVersion": 1,
+      "update": {
+        "vorName": "Maximilian","nachName": "Mustermann", "jahrgang": 2011, "geschlecht": "w"
+      }
+    }' 
+
+Test 10: --> Lock bei PUT testen
+for i in {1..10}; do
+ curl -s -X PUT https://sporttag-backend.onrender.com/kind \
+    -H "Content-Type: application/json" \
+    -d '{
+      "search": {
+        "vorName": "Max",
+        "nachName": "Mustermann",
+        "jahrgang": 2014,
+        "geschlecht": "m"
+      },
+      "expectedVersion": 1,
+      "update": {
+        "vorName": "Maximilian","nachName": "Mustermann", "jahrgang": 2011, "geschlecht": "w"
+      }
+    }' &
+done
+
+wait

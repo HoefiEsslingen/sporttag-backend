@@ -1,0 +1,27 @@
+Warum ich any für Pointer verwende
+Parse erwartet Pointer in genau diesem JSON-Format:
+{
+  "__type": "Pointer",
+  "className": "Kind",
+  "objectId": "abc123"
+}
+Mit any kannst du:
+dieses Objekt 1:1 durchreichen
+
+später typisieren, ohne bestehende Handler umzubauen
+flexibel zwischen Query / Insert / Update wechseln
+
+🔒 Abgleich mit deinem Lock- & BusinessKey-Konzept
+Kind → BusinessKey sinnvoll ✅
+alle anderen Klassen → Lock immer über objectId
+
+Relationstabellen (kinderDerRiege, resultate)
+→ Lock über Kombination der beteiligten objectIds
+Beispiel:
+lockKey := kindObjectId + "|" + stationObjectId
+
+✅ Zusammenfassung
+✔️ Alle Back4App-Schemas sind jetzt sauber in Go abgebildet
+✔️ Pointer-Beziehungen sind Parse-kompatibel
+✔️ Erweiterbar für Locking, Versioning & Queries
+✔️ Stil konsistent mit deiner bestehenden Kind-Struct
