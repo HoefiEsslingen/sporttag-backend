@@ -41,17 +41,6 @@ func kindBusinessKey(s strukturen.Kind) string {
 		s.Geschlecht
 }
 
-/*
-*
-// Erzeugt den Business-Key aus einem Kind-Objekt
-
-	func kindBusinessKeyFromKind(k strukturen.Kind) string {
-		return k.VorName + "|" + k.NachName + "|" +
-			strconv.Itoa(k.Jahrgang) + "|" + k.Geschlecht
-	}
-
-*
-*/
 func (h *KindHandler) KindRouter(w http.ResponseWriter, r *http.Request) {
 	// ---- CORS ----
 	// Erlaube Anfragen von der Frontend-Domain auf sporttag.b4a.app
